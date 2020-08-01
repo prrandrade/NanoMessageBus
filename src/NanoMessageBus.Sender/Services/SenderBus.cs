@@ -31,9 +31,9 @@
 
             #region Getting Properties from command line or environment
             ServiceIdentification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerIdentification", variableName: "brokerIdentification");
-            MaxShardingSize = MaxShardingSize = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerMaxShardingSize", variableName: "brokerMaxShardingSize", fallbackValue: 1);
+            MaxShardingSize = MaxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: "brokerMaxShardingSize", fallbackValue: 1);
             Logger.LogInformation($"NanoMessageBus Sender starting with ServiceIdentification: {ServiceIdentification}");
-            Logger.LogInformation($"NanoMessageBus Sender starting with MaxShardingSize: {ServiceIdentification}");
+            Logger.LogInformation($"NanoMessageBus Sender starting with MaxShardingSize: {MaxShardingSize}");
             #endregion
 
             #region Creating RabbitMQ Connection
@@ -91,7 +91,6 @@
             basicProperties.Headers.Add("SendFinishDate", DateTimeUtils.UtcNow().ToBinary());
             ch.BasicPublish(exchange, routingKey, basicProperties, byteContent);
         }
-
 
         #region Private methods
 
@@ -157,6 +156,5 @@
         }
 
         #endregion
-
     }
 }
