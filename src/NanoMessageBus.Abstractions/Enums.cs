@@ -8,6 +8,4 @@
         Level3Priority,
         Level4Priority
     }
-
-    public 
 }

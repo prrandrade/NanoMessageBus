@@ -6,7 +6,7 @@
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using Abstractions;
-    using DateTimeUtils.Interefaces;
+    using DateTimeUtils.Interfaces;
     using Extensions;
     using Interfaces;
     using Microsoft.Extensions.Logging;
@@ -15,14 +15,15 @@
 
     public class SenderBus : ISenderBus
     {
+        // injected dependencies
         private ILogger<SenderBus> Logger { get; }
-        private IConnectionFactory ConnectionFactory { get; }
-        private IConnection Connection { get; }
-        private IModel Channel { get; }
         private IDateTimeUtils DateTimeUtils { get; }
 
-        private int MaxShardingSize { get; }
-        private string ServiceIdentification { get; }
+        // private fields
+        private readonly IConnection _connection;
+        private readonly IModel _channel;
+        private readonly int _maxShardingSize;
+        private readonly string _identification;
 
         public SenderBus(ILogger<SenderBus> logger, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils)
         {
@@ -30,10 +31,10 @@
             DateTimeUtils = dateTimeUtils;
 
             #region Getting Properties from command line or environment
-            ServiceIdentification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerIdentification", variableName: "brokerIdentification");
-            MaxShardingSize = MaxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: "brokerMaxShardingSize", fallbackValue: 1);
-            Logger.LogInformation($"NanoMessageBus Sender starting with ServiceIdentification: {ServiceIdentification}");
-            Logger.LogInformation($"NanoMessageBus Sender starting with MaxShardingSize: {MaxShardingSize}");
+            _identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerIdentification", variableName: "brokerIdentification");
+            _maxShardingSize = _maxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: "brokerMaxShardingSize", fallbackValue: 1);
+            Logger.LogInformation($"NanoMessageBus Sender starting with ServiceIdentification: {_identification}");
+            Logger.LogInformation($"NanoMessageBus Sender starting with MaxShardingSize: {_maxShardingSize}");
             #endregion
 
             #region Creating RabbitMQ Connection
@@ -41,55 +42,62 @@
             var virtualHost = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerVirtualHost", variableName: "brokerVirtualHost", fallbackValue: "/");
             var username = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerUsername", variableName: "brokerUsername", fallbackValue: "guest");
             var password = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerPassword", variableName: "brokerPassword", fallbackValue: "guest");
-            ConnectionFactory = new ConnectionFactory
+            IConnectionFactory connectionFactory = new ConnectionFactory
             {
                 UserName = username,
                 VirtualHost = virtualHost,
                 Password = password,
                 AutomaticRecoveryEnabled = true
             };
-            Connection = ConnectionFactory.CreateConnection(hostnames.Split(';'));
-            Channel = Connection.CreateModel();
+
+            _connection = connectionFactory.CreateConnection(hostnames.Split(';'));
+            _channel = _connection.CreateModel();
             Logger.LogInformation($"NanoMessageBus Sender connection to servers {hostnames}");
             #endregion
 
             #region Registering Exchange
 
-            var exchange = BusDetails.GetExchangeName(ServiceIdentification);
-            Channel.ExchangeDeclare(exchange, "direct", true);
-            Logger.LogInformation($"NanoMessageBus Sender creating exchange {exchange} to send messages.");
+            var exchangeBaseName = BusDetails.GetExchangeName(_identification);
+
+            for (var i = 0; i < _maxShardingSize; i++)
+            {
+                var exchangeName = string.Format(exchangeBaseName, i);
+                _channel.ExchangeDeclare(exchangeName, ExchangeType.Fanout, true);
+                Logger.LogInformation($"NanoMessageBus Sender creating fanout exchange {exchangeName} to send messages.");
+            }
 
             #endregion
         }
 
         public async Task SendAsync(IMessage message, MessagePriority priority = MessagePriority.NormalPriority, Func<object, int, int> shardResolver = null)
         {
+            using var ch = _connection.CreateModel();
+
             // resolving dependencies
             var (messageIdType, messageId) = GetMessageId(message);
             var shardFuncResolver = GetShardResolver(messageIdType, shardResolver);
 
-            // getting type of message and 
+            // getting type of message
             var messageType = message.GetType();
-            var fullName = messageType.AssemblyQualifiedName ?? "";
+            var fullName = messageType.AssemblyQualifiedName;
 
             // getting basic properties
-            var basicProperties = Channel.CreateBasicProperties();
+            var basicProperties = _channel.CreateBasicProperties();
             basicProperties.Headers = new Dictionary<string, object> { { "SendStartDate", DateTimeUtils.UtcNow().ToBinary() } };
             basicProperties.DeliveryMode = 2;
             basicProperties.Type = fullName;
             basicProperties.Persistent = true;
             basicProperties.Priority = MessagePriorityToByte(priority);
 
-            // discovering the message shard, and calculating the exchange and the routing key
-            var shardResolverResult = shardFuncResolver(messageId, MaxShardingSize);
-            var exchange = BusDetails.GetExchangeName(ServiceIdentification);
-            var routingKey = BusDetails.GetRoutingKey(ServiceIdentification, shardResolverResult);
+            // discovering the message shard, and calculating the destiny queue
+            var shardResolverResult = shardFuncResolver(messageId, _maxShardingSize);
+            var exchange = string.Format(BusDetails.GetExchangeName(_identification), shardResolverResult);
 
             // sending the message
             var byteContent = await CustomSerializer.CompressMessageAsync(message);
-            using var ch = Connection.CreateModel();
+            
             basicProperties.Headers.Add("SendFinishDate", DateTimeUtils.UtcNow().ToBinary());
-            ch.BasicPublish(exchange, routingKey, basicProperties, byteContent);
+            ch.BasicPublish(exchange, string.Empty, basicProperties, byteContent);
         }
 
         #region Private methods

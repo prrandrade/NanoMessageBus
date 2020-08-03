@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "NanoMessageBus.DummyService": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "brokerIdentification": "ExampleService",
+        "brokerMaxShardingSize": "10",
+        "brokerHostname": "localhost",
+        "brokerVirtualHost": "/",
+        "brokerUsername": "guest",
+        "brokerPassword": "guest"
+      }
+    }
+  }
+}
