@@ -3,8 +3,10 @@
     "NanoMessageBus.DummyService": {
       "commandName": "Project",
       "environmentVariables": {
-        "brokerIdentification": "ExampleService",
         "brokerMaxShardingSize": "10",
+        "brokerIdentification": "ExampleService",
+        "brokerListenedServices": "ExampleService",
+        "brokerListenedShards": "0-9",  
         "brokerHostname": "localhost",
         "brokerVirtualHost": "/",
         "brokerUsername": "guest",

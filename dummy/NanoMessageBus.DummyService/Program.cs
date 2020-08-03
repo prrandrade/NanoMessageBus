@@ -4,6 +4,7 @@
     using DateTimeUtils;
     using Microsoft.Extensions.DependencyInjection;
     using PropertyRetriever;
+    using Receiver;
     using Sender;
 
     public class Program
@@ -16,9 +17,13 @@
             services.AddPropertyRetriever();
             services.AddDateTimeUtils();
             services.AddSenderBus();
+            services.AddReceiverBus();
 
             // creating service provider container with all dependency injections
-            var container = services.BuildServiceProvider();
+            var container = services
+                .BuildServiceProvider()
+                .LoadSenderBus()
+                .LoadReceiverBus();
 
             // start message sender
             var senderBus = container.GetSenderBus();
@@ -30,6 +35,11 @@
             };
 
             senderBus.SendAsync(exampleMessage);
+
+            container.ConsumeMessages();
+            
+
+            Console.ReadKey(true);
         }
     }
 }

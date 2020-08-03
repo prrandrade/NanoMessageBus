@@ -19,11 +19,13 @@
         private ILogger<SenderBus> Logger { get; }
         private IDateTimeUtils DateTimeUtils { get; }
 
-        // private fields
-        private readonly IConnection _connection;
-        private readonly IModel _channel;
+        // private fields - configuration
         private readonly int _maxShardingSize;
         private readonly string _identification;
+
+        // private fields - rabbitmq
+        private readonly IConnection _connection;
+        private readonly IModel _channel;
 
         public SenderBus(ILogger<SenderBus> logger, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils)
         {
@@ -33,8 +35,8 @@
             #region Getting Properties from command line or environment
             _identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerIdentification", variableName: "brokerIdentification");
             _maxShardingSize = _maxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: "brokerMaxShardingSize", fallbackValue: 1);
-            Logger.LogInformation($"NanoMessageBus Sender starting with ServiceIdentification: {_identification}");
-            Logger.LogInformation($"NanoMessageBus Sender starting with MaxShardingSize: {_maxShardingSize}");
+            Logger.LogInformation($"Sending with ServiceIdentification: {_identification}");
+            Logger.LogInformation($"Sending with MaxShardingSize: {_maxShardingSize}");
             #endregion
 
             #region Creating RabbitMQ Connection
@@ -52,18 +54,16 @@
 
             _connection = connectionFactory.CreateConnection(hostnames.Split(';'));
             _channel = _connection.CreateModel();
-            Logger.LogInformation($"NanoMessageBus Sender connection to servers {hostnames}");
+            Logger.LogInformation($"Connecting to servers: {hostnames}");
             #endregion
 
             #region Registering Exchange
-
-            var exchangeBaseName = BusDetails.GetExchangeName(_identification);
-
+            
             for (var i = 0; i < _maxShardingSize; i++)
             {
-                var exchangeName = string.Format(exchangeBaseName, i);
-                _channel.ExchangeDeclare(exchangeName, ExchangeType.Fanout, true);
-                Logger.LogInformation($"NanoMessageBus Sender creating fanout exchange {exchangeName} to send messages.");
+                var exchange = BusDetails.GetExchangeName(_identification, i);
+                _channel.ExchangeDeclare(exchange, ExchangeType.Fanout, true);
+                Logger.LogInformation($"Creating fanout exchange {exchange} to send messages.");
             }
 
             #endregion
@@ -91,13 +91,13 @@
 
             // discovering the message shard, and calculating the destiny queue
             var shardResolverResult = shardFuncResolver(messageId, _maxShardingSize);
-            var exchange = string.Format(BusDetails.GetExchangeName(_identification), shardResolverResult);
+            var exchange = string.Format(BusDetails.GetExchangeName(_identification, shardResolverResult));
 
             // sending the message
             var byteContent = await CustomSerializer.CompressMessageAsync(message);
-            
             basicProperties.Headers.Add("SendFinishDate", DateTimeUtils.UtcNow().ToBinary());
             ch.BasicPublish(exchange, string.Empty, basicProperties, byteContent);
+            Logger.LogInformation($"Sending message {messageType.Name} to {exchange}");
         }
 
         #region Private methods
@@ -150,7 +150,7 @@
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static byte MessagePriorityToByte(MessagePriority messagePriority)
+        private static byte MessagePriorityToByte(MessagePriority messagePriority)
         {
             return messagePriority switch
             {

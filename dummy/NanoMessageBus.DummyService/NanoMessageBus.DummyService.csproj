@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\NanoMessageBus.Receiver\NanoMessageBus.Receiver.csproj" />
     <ProjectReference Include="..\..\src\NanoMessageBus.Sender\NanoMessageBus.Sender.csproj" />
   </ItemGroup>
 
