@@ -12,63 +12,69 @@
     using DateTimeUtils.Interfaces;
     using Extensions;
     using Interfaces;
-    using Microsoft.Extensions.Logging;
     using PropertyRetriever.Interfaces;
     using RabbitMQ.Client;
 
     public class SenderBus : ISenderBus
     {
         // injected dependencies
-        private ILogger<SenderBus> Logger { get; }
-        private IDateTimeUtils DateTimeUtils { get; }
+        public ILoggerFacade<SenderBus> Logger { get; }
+        public IDateTimeUtils DateTimeUtils { get; }
 
         // private fields - configuration
-        private readonly int _maxShardingSize;
-        private readonly string _identification;
+        public int MaxShardingSize { get; }
+        public string Identification { get; }
 
         // private fields - rabbitmq
-        private readonly IConnection _connection;
-        private readonly IModel _channel;
+        public IConnection Connection { get; }
 
-        public SenderBus(ILogger<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils)
+        public SenderBus(ILoggerFacade<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils)
         {
-            Logger = logger;
-            DateTimeUtils = dateTimeUtils;
-
-            #region Getting Properties from command line or environment
-            _identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerIdentification", variableName: "brokerIdentification");
-            _maxShardingSize = _maxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: "brokerMaxShardingSize", fallbackValue: 1);
-            Logger.LogDebug($"Sending with ServiceIdentification: {_identification}");
-            Logger.LogDebug($"Sending with MaxShardingSize: {_maxShardingSize}");
-            #endregion
-
-            #region Creating RabbitMQ Connection
-            var hostnames = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerHostname", variableName: "brokerHostname", fallbackValue: "localhost:5672");
-            var virtualHost = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerVirtualHost", variableName: "brokerVirtualHost", fallbackValue: "/");
-            var username = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerUsername", variableName: "brokerUsername", fallbackValue: "guest");
-            var password = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerPassword", variableName: "brokerPassword", fallbackValue: "guest");
-            var connectionFactory = connectionFactoryManager.GetConnectionFactory(username, virtualHost, password, true);
-
-            _connection = connectionFactory.CreateConnection(hostnames.Split(';'));
-            _channel = _connection.CreateModel();
-            Logger.LogDebug($"Connecting to servers: {hostnames}");
-            #endregion
-
-            #region Registering Exchange
-            
-            for (var i = 0; i < _maxShardingSize; i++)
+            try
             {
-                var exchange = BusDetails.GetExchangeName(_identification, (uint)i);
-                _channel.ExchangeDeclare(exchange, ExchangeType.Fanout, true);
-                Logger.LogDebug($"Creating fanout exchange {exchange} to send messages.");
-            }
+                Logger = logger;
+                DateTimeUtils = dateTimeUtils;
 
-            #endregion
+                #region Getting Properties from command line or environment
+                Identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerIdentification", variableName: "brokerIdentification", fallbackValue: "NoIdentification");
+                MaxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: "brokerMaxShardingSize", fallbackValue: 1);
+                Logger.LogDebug($"Sending with ServiceIdentification: {Identification}");
+                Logger.LogDebug($"Sending with MaxShardingSize: {MaxShardingSize}");
+                #endregion
+
+                #region Creating RabbitMQ Connection
+                var hostnames = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerHostname", variableName: "brokerHostname", fallbackValue: "localhost:5672");
+                var virtualHost = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerVirtualHost", variableName: "brokerVirtualHost", fallbackValue: "/");
+                var username = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerUsername", variableName: "brokerUsername", fallbackValue: "guest");
+                var password = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerPassword", variableName: "brokerPassword", fallbackValue: "guest");
+                var connectionFactory = connectionFactoryManager.GetConnectionFactory(username, virtualHost, password, true);
+
+                Connection = connectionFactory.CreateConnection(hostnames.Split(','));
+                Logger.LogDebug($"Connecting to servers: {hostnames}");
+                #endregion
+
+                #region Registering Exchange
+
+                using var channel = Connection.CreateModel();
+                for (var i = 0; i < MaxShardingSize; i++)
+                {
+                    var exchange = BusDetails.GetExchangeName(Identification, (uint)i);
+                    channel.ExchangeDeclare(exchange, ExchangeType.Fanout, true);
+                    Logger.LogDebug($"Creating fanout exchange {exchange} to send messages.");
+                }
+                channel.Close();
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("A error has occurred, impossible to continue. Please see the inner exception for details.", ex);
+            }
         }
 
         public async Task SendAsync(IMessage message, MessagePriority priority = MessagePriority.NormalPriority, Func<object, int, int> shardResolver = null)
         {
-            using var ch = _connection.CreateModel();
+            using var ch = Connection.CreateModel();
 
             // resolving dependencies
             var (messageIdType, messageId) = GetMessageId(message);
@@ -79,7 +85,7 @@
             var fullName = messageType.AssemblyQualifiedName;
 
             // getting basic properties
-            var basicProperties = _channel.CreateBasicProperties();
+            var basicProperties = ch.CreateBasicProperties();
             basicProperties.Headers = new Dictionary<string, object> { { "prepareToSendAt", DateTimeUtils.UtcNow().ToBinary() } };
             basicProperties.DeliveryMode = 2;
             basicProperties.Type = fullName;
@@ -87,8 +93,8 @@
             basicProperties.Priority = MessagePriorityToByte(priority);
 
             // discovering the message shard, and calculating the destiny queue
-            var shardResolverResult = shardFuncResolver(messageId, _maxShardingSize);
-            var exchange = string.Format(BusDetails.GetExchangeName(_identification, (uint)shardResolverResult));
+            var shardResolverResult = shardFuncResolver(messageId, MaxShardingSize);
+            var exchange = string.Format(BusDetails.GetExchangeName(Identification, (uint)shardResolverResult));
 
             // sending the message
             var stream = new MemoryStream();
@@ -97,6 +103,7 @@
             basicProperties.Headers.Add("sentAt", DateTimeUtils.UtcNow().ToBinary());
             ch.BasicPublish(exchange, string.Empty, basicProperties, byteContent);
             Logger.LogDebug($"Sending message {messageType.Name} to {exchange}");
+            ch.Close();
         }
 
         #region Private methods
@@ -132,9 +139,9 @@
             if (shardResolver == null)
             {
                 if (messageIdType == typeof(int))
-                    return (mId, size) => (int) mId % size;
+                    return (mId, size) => (int)mId % size;
                 else if (messageIdType == typeof(Guid))
-                    return (mId, size) => ((Guid) mId).ToByteArray().Aggregate(0, (current, byteElement) => current + byteElement) % size;
+                    return (mId, size) => ((Guid)mId).ToByteArray().Aggregate(0, (current, byteElement) => current + byteElement) % size;
                 else
                 {
                     const string errMessage = "No compatible type for default shard resolver method!";

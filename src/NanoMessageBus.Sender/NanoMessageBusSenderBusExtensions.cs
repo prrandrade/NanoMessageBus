@@ -1,8 +1,8 @@
 ﻿namespace NanoMessageBus.Sender
 {
-    using System.Threading;
     using Abstractions.Interfaces;
     using Abstractions.Services;
+    using DateTimeUtils;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -15,7 +15,9 @@
         public static IServiceCollection AddSenderBus(this IServiceCollection @this)
         {
             @this.AddPropertyRetriever();
+            @this.AddDateTimeUtils();
             @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
+            @this.TryAddScoped(typeof(ILoggerFacade<>), typeof(LoggerFacade<>));
             @this.TryAddSingleton<IRabbitMqConnectionFactoryManager, RabbitMqConnectionFactoryManager>();
             @this.TryAddSingleton<ISenderBus, SenderBus>();
             return @this;
@@ -23,8 +25,7 @@
 
         public static ServiceProvider LoadSenderBus(this ServiceProvider @this)
         {
-            @this.GetService<ISenderBus>();
-            Thread.Sleep(100);
+            var bus = @this.GetService<ISenderBus>();
             return @this;
         }
 

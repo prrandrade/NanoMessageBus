@@ -7,7 +7,7 @@
         "brokerIdentification": "ExampleService",
         "brokerListenedServices": "ExampleService",
         "brokerListenedShards": "0-9",  
-        "brokerHostname": "localhost",
+        "brokerHostname": "randrade.ddns.net",
         "brokerVirtualHost": "/",
         "brokerUsername": "guest",
         "brokerPassword": "guest"
