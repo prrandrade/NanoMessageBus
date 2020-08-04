@@ -13,7 +13,7 @@
         public static IServiceCollection AddSenderBus(this IServiceCollection @this)
         {
             @this.AddPropertyRetriever();
-            @this.AddLogging(c => c.AddConsole());
+            @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
             @this.TryAddSingleton<ISenderBus, SenderBus>();
             return @this;
         }

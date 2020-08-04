@@ -3,5 +3,5 @@
     using System;
 
     [AttributeUsage(AttributeTargets.Property)]
-    public class MessageIdAttribute : Attribute { }
+    public sealed class MessageIdAttribute : Attribute { }
 }

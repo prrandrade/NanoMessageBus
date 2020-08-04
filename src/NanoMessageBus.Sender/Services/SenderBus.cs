@@ -35,8 +35,8 @@
             #region Getting Properties from command line or environment
             _identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerIdentification", variableName: "brokerIdentification");
             _maxShardingSize = _maxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: "brokerMaxShardingSize", fallbackValue: 1);
-            Logger.LogInformation($"Sending with ServiceIdentification: {_identification}");
-            Logger.LogInformation($"Sending with MaxShardingSize: {_maxShardingSize}");
+            Logger.LogDebug($"Sending with ServiceIdentification: {_identification}");
+            Logger.LogDebug($"Sending with MaxShardingSize: {_maxShardingSize}");
             #endregion
 
             #region Creating RabbitMQ Connection
@@ -54,7 +54,7 @@
 
             _connection = connectionFactory.CreateConnection(hostnames.Split(';'));
             _channel = _connection.CreateModel();
-            Logger.LogInformation($"Connecting to servers: {hostnames}");
+            Logger.LogDebug($"Connecting to servers: {hostnames}");
             #endregion
 
             #region Registering Exchange
@@ -63,7 +63,7 @@
             {
                 var exchange = BusDetails.GetExchangeName(_identification, i);
                 _channel.ExchangeDeclare(exchange, ExchangeType.Fanout, true);
-                Logger.LogInformation($"Creating fanout exchange {exchange} to send messages.");
+                Logger.LogDebug($"Creating fanout exchange {exchange} to send messages.");
             }
 
             #endregion
@@ -83,7 +83,7 @@
 
             // getting basic properties
             var basicProperties = _channel.CreateBasicProperties();
-            basicProperties.Headers = new Dictionary<string, object> { { "SendStartDate", DateTimeUtils.UtcNow().ToBinary() } };
+            basicProperties.Headers = new Dictionary<string, object> { { "prepareToSendAt", DateTimeUtils.UtcNow().ToBinary() } };
             basicProperties.DeliveryMode = 2;
             basicProperties.Type = fullName;
             basicProperties.Persistent = true;
@@ -95,9 +95,9 @@
 
             // sending the message
             var byteContent = await CustomSerializer.CompressMessageAsync(message);
-            basicProperties.Headers.Add("SendFinishDate", DateTimeUtils.UtcNow().ToBinary());
+            basicProperties.Headers.Add("sentAt", DateTimeUtils.UtcNow().ToBinary());
             ch.BasicPublish(exchange, string.Empty, basicProperties, byteContent);
-            Logger.LogInformation($"Sending message {messageType.Name} to {exchange}");
+            Logger.LogDebug($"Sending message {messageType.Name} to {exchange}");
         }
 
         #region Private methods

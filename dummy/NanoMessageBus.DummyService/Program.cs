@@ -25,19 +25,21 @@
                 .LoadSenderBus()
                 .LoadReceiverBus();
 
+            // start consuming messages
+            container.ConsumeMessages();
+
             // start message sender
             var senderBus = container.GetSenderBus();
 
-            var exampleMessage = new ExampleMessage
+            for (var i = 0; i < 10000; i++)
             {
-                Id = 15,
-                MessageContent = "Hello World!"
-            };
-
-            senderBus.SendAsync(exampleMessage);
-
-            container.ConsumeMessages();
-            
+                var exampleMessage = new ExampleMessage
+                {
+                    Id = i,
+                    MessageContent = "Hello World!"
+                };
+                senderBus.SendAsync(exampleMessage);
+            }
 
             Console.ReadKey(true);
         }

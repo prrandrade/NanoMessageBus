@@ -4,12 +4,16 @@
     using System.Linq;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
+    using PropertyRetriever;
     using Services;
 
     public static class NanoMessageBusReceiverBusExtensions
     {
         public static IServiceCollection AddReceiverBus(this IServiceCollection @this)
         {
+            @this.AddPropertyRetriever();
+            @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 foreach (var mytype in assembly.GetTypes().Where(mytype => mytype.GetInterfaces().Contains(typeof(IMessageHandler)))) 
@@ -19,7 +23,6 @@
                     @this.AddScoped(mytype);
                 }
             }
-
             @this.AddSingleton<IReceiverBus, ReceiverBus>();
             return @this;
         }
