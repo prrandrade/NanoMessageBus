@@ -2,8 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Threading.Tasks;
-    using Abstractions;
+    using Abstractions.Interfaces;
     using DateTimeUtils.Interfaces;
     using Extensions;
     using Interfaces;
@@ -31,10 +32,9 @@
         // private fields - rabbitmq
         private IConnectionFactory ConnectionFactory { get; }
         private IConnection Connection { get; }
-        private IModel Channel { get; }
 
-        public ReceiverBus(ILogger<ReceiverBus> logger, IServiceScopeFactory serviceScopeFactory,
-            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils,
+        public ReceiverBus(ILogger<ReceiverBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager,
+            IServiceScopeFactory serviceScopeFactory, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils,
             IEnumerable<IMessageHandler> handlers)
         {
             Logger = logger;
@@ -44,7 +44,7 @@
             var identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerIdentification", variableName: "brokerIdentification");
             var maxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: "brokerMaxShardingSize", fallbackValue: 1);
             var listenedServices = BusDetails.GetListenedServicesFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerListenedServices", variableName: "brokerListenedServices"));
-            var listenedShards = BusDetails.GetListenedShardsFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerListenedShards", variableName: "brokerListenedShards", fallbackValue: "1"), maxShardingSize);
+            var listenedShards = BusDetails.GetListenedShardsFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerListenedShards", variableName: "brokerListenedShards", fallbackValue: "1"), (uint)maxShardingSize);
             _autoAck = propertyRetriever.CheckFromCommandLine("autoAck");
             Logger.LogDebug($"Receiving with MaxShardingSize: {maxShardingSize}");
             Logger.LogDebug($"Listening Services {string.Join(',', listenedServices)}");
@@ -74,34 +74,30 @@
             var username = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerUsername", variableName: "brokerUsername", fallbackValue: "guest");
             var password = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerPassword", variableName: "brokerPassword", fallbackValue: "guest");
             var prefetchSize = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerPrefetchSize", variableName: "brokerPrefetchSize", fallbackValue: (ushort)100);
+            ConnectionFactory = connectionFactoryManager.GetConnectionFactory(username, virtualHost, password, true);
 
-            ConnectionFactory = new ConnectionFactory
-            {
-                UserName = username,
-                VirtualHost = virtualHost,
-                Password = password,
-                AutomaticRecoveryEnabled = true
-            };
             Connection = ConnectionFactory.CreateConnection(hostnames.Split(','));
-            Channel = Connection.CreateModel();
-            Channel.BasicQos(0, prefetchSize, true);
 
             #endregion
 
             #region Creating the queues and binding with the exchanges
 
-            foreach (var listenedShard in listenedShards)
+            using (var baseChannel = Connection.CreateModel())
             {
-                var queue = BusDetails.GetQueueName(identification, listenedShard);
-                Queues.Add(queue);
-                foreach (var listenedService in listenedServices)
+                foreach (var listenedShard in listenedShards)
                 {
-                    var exchange = BusDetails.GetExchangeName(listenedService, listenedShard);
-                    Channel.QueueDeclare(queue, true, false, false);
-                    Channel.ExchangeDeclare(exchange, ExchangeType.Fanout, true);
-                    Channel.QueueBind(queue, exchange, string.Empty);
-                    Logger.LogDebug($"Binding Exchange {exchange} with Queue {queue}");
+                    var queue = BusDetails.GetQueueName(identification, listenedShard);
+                    Queues.Add(queue);
+                    foreach (var listenedService in listenedServices)
+                    {
+                        var exchange = BusDetails.GetExchangeName(listenedService, listenedShard);
+                        baseChannel.QueueDeclare(queue, true, false, false);
+                        baseChannel.ExchangeDeclare(exchange, ExchangeType.Fanout, true);
+                        baseChannel.QueueBind(queue, exchange, string.Empty);
+                        Logger.LogDebug($"Binding Exchange {exchange} with Queue {queue}");
+                    }
                 }
+                baseChannel.Close();
             }
 
             #endregion
@@ -111,6 +107,7 @@
             foreach (var queue in Queues)
             {
                 var channel = Connection.CreateModel();
+                channel.BasicQos(0, prefetchSize, true);
                 Channels.Add(queue, channel);
                 var asyncConsumer = new EventingBasicConsumer(channel);
                 asyncConsumer.Received += async (sender, ea) =>
@@ -168,7 +165,7 @@
                 return (null, null);
             }
 
-            var receivedMessage = await CustomSerializer.DecompressMessageAsync(receivedMessageType, ea.Body.ToArray());
+            var receivedMessage = await System.Text.Json.JsonSerializer.DeserializeAsync(new MemoryStream(ea.Body.ToArray()), receivedMessageType);
             var receivedConvertedMessage = (IMessage)receivedMessage;
 
             return (receivedConvertedMessage, receivedMessageType);

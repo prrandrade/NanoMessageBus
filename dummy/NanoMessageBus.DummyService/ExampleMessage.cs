@@ -1,6 +1,7 @@
 ﻿namespace NanoMessageBus.DummyService
 {
-    using Abstractions;
+    using Abstractions.Attributes;
+    using Abstractions.Interfaces;
 
     public class ExampleMessage : IMessage
     {

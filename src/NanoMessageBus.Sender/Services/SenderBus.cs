@@ -2,10 +2,13 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
-    using Abstractions;
+    using Abstractions.Attributes;
+    using Abstractions.Enums;
+    using Abstractions.Interfaces;
     using DateTimeUtils.Interfaces;
     using Extensions;
     using Interfaces;
@@ -27,7 +30,7 @@
         private readonly IConnection _connection;
         private readonly IModel _channel;
 
-        public SenderBus(ILogger<SenderBus> logger, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils)
+        public SenderBus(ILogger<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils)
         {
             Logger = logger;
             DateTimeUtils = dateTimeUtils;
@@ -44,13 +47,7 @@
             var virtualHost = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerVirtualHost", variableName: "brokerVirtualHost", fallbackValue: "/");
             var username = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerUsername", variableName: "brokerUsername", fallbackValue: "guest");
             var password = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerPassword", variableName: "brokerPassword", fallbackValue: "guest");
-            IConnectionFactory connectionFactory = new ConnectionFactory
-            {
-                UserName = username,
-                VirtualHost = virtualHost,
-                Password = password,
-                AutomaticRecoveryEnabled = true
-            };
+            var connectionFactory = connectionFactoryManager.GetConnectionFactory(username, virtualHost, password, true);
 
             _connection = connectionFactory.CreateConnection(hostnames.Split(';'));
             _channel = _connection.CreateModel();
@@ -61,7 +58,7 @@
             
             for (var i = 0; i < _maxShardingSize; i++)
             {
-                var exchange = BusDetails.GetExchangeName(_identification, i);
+                var exchange = BusDetails.GetExchangeName(_identification, (uint)i);
                 _channel.ExchangeDeclare(exchange, ExchangeType.Fanout, true);
                 Logger.LogDebug($"Creating fanout exchange {exchange} to send messages.");
             }
@@ -91,10 +88,12 @@
 
             // discovering the message shard, and calculating the destiny queue
             var shardResolverResult = shardFuncResolver(messageId, _maxShardingSize);
-            var exchange = string.Format(BusDetails.GetExchangeName(_identification, shardResolverResult));
+            var exchange = string.Format(BusDetails.GetExchangeName(_identification, (uint)shardResolverResult));
 
             // sending the message
-            var byteContent = await CustomSerializer.CompressMessageAsync(message);
+            var stream = new MemoryStream();
+            await System.Text.Json.JsonSerializer.SerializeAsync(stream, message, message.GetType());
+            var byteContent = stream.ToArray();
             basicProperties.Headers.Add("sentAt", DateTimeUtils.UtcNow().ToBinary());
             ch.BasicPublish(exchange, string.Empty, basicProperties, byteContent);
             Logger.LogDebug($"Sending message {messageType.Name} to {exchange}");

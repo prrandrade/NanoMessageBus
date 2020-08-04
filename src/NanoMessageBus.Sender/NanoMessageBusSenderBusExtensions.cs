@@ -1,6 +1,8 @@
 ﻿namespace NanoMessageBus.Sender
 {
     using System.Threading;
+    using Abstractions.Interfaces;
+    using Abstractions.Services;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -14,6 +16,7 @@
         {
             @this.AddPropertyRetriever();
             @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
+            @this.TryAddSingleton<IRabbitMqConnectionFactoryManager, RabbitMqConnectionFactoryManager>();
             @this.TryAddSingleton<ISenderBus, SenderBus>();
             return @this;
         }

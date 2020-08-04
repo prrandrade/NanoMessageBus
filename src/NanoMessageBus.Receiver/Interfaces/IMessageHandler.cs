@@ -1,7 +1,7 @@
 ﻿namespace NanoMessageBus.Receiver.Interfaces
 {
     using System.Threading.Tasks;
-    using Abstractions;
+    using Abstractions.Interfaces;
 
     public interface IMessageHandler { }
 

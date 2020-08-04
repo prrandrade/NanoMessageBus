@@ -1,4 +1,4 @@
-﻿namespace NanoMessageBus.Abstractions
+﻿namespace NanoMessageBus.Abstractions.Attributes
 {
     using System;
 

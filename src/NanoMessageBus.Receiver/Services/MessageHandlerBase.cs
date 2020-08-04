@@ -1,8 +1,7 @@
 ﻿namespace NanoMessageBus.Receiver.Services
 {
-    using System;
     using System.Threading.Tasks;
-    using Abstractions;
+    using Abstractions.Interfaces;
     using Interfaces;
 
     public abstract class MessageHandlerBase<TMessage> : IMessageHandler<TMessage> where TMessage : IMessage

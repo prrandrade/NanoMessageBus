@@ -2,8 +2,11 @@
 {
     using System;
     using System.Linq;
+    using Abstractions.Interfaces;
+    using Abstractions.Services;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.DependencyInjection.Extensions;
     using Microsoft.Extensions.Logging;
     using PropertyRetriever;
     using Services;
@@ -23,6 +26,7 @@
                     @this.AddScoped(mytype);
                 }
             }
+            @this.TryAddSingleton<IRabbitMqConnectionFactoryManager, RabbitMqConnectionFactoryManager>();
             @this.AddSingleton<IReceiverBus, ReceiverBus>();
             return @this;
         }
