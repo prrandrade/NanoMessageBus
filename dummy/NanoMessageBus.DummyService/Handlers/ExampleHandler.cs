@@ -26,7 +26,6 @@
 
         public override async Task Handle(ExampleMessage message)
         {
-            _logger.LogInformation(message.MessageContent);
             await Task.CompletedTask;
         }
     }

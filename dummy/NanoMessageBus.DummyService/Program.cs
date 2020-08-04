@@ -1,6 +1,8 @@
 ﻿namespace NanoMessageBus.DummyService
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using DateTimeUtils;
     using Microsoft.Extensions.DependencyInjection;
     using PropertyRetriever;
@@ -31,15 +33,16 @@
             // start message sender
             var senderBus = container.GetSenderBus();
 
-            for (var i = 0; i < 10000; i++)
-            {
-                var exampleMessage = new ExampleMessage
-                {
-                    Id = i,
-                    MessageContent = "Hello World!"
-                };
-                senderBus.SendAsync(exampleMessage);
-            }
+            Parallel.For(0, 100000, new ParallelOptions { MaxDegreeOfParallelism = 32 }, i =>
+             {
+                 var exampleMessage = new ExampleMessage
+                 {
+                     Id = i,
+                     MessageContent = "Hello World!"
+                 };
+                 senderBus.SendAsync(exampleMessage);
+                 Thread.Sleep(1);
+             });
 
             Console.ReadKey(true);
         }
