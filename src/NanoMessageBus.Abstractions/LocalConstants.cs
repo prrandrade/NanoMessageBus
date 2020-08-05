@@ -8,6 +8,14 @@
         public const string BrokerMaxShardingSizeProperty = "brokerMaxShardingSize";
         public const int BrokerMaxShardingSizeFallbackValue = 1;
 
+        public const string BrokerListenedServicesProperty = "brokerListenedServices";
+        public const string BrokerListenedServicesFallbackValue = "{0}";
+
+        public const string BrokerListenedShardsProperty = "brokerListenedShards";
+        public const string BrokerListenedShardsFallbackValue = "0-{0}";
+
+        public const string BrokerAutoAckProperty = "autoAck";
+
         public const string BrokerHostnameProperty = "brokerHostname";
         public const string BrokerHostnameFallbackValue = "localhost:5672";
 

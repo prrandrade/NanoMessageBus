@@ -13,6 +13,7 @@
     using PropertyRetriever.Interfaces;
     using RabbitMQ.Client;
     using RabbitMQ.Client.Events;
+    using static Abstractions.LocalConstants;
 
     public class ReceiverBus : IReceiverBus
     {
@@ -37,15 +38,16 @@
             IServiceScopeFactory serviceScopeFactory, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils,
             IEnumerable<IMessageHandler> handlers)
         {
-            Logger = logger;
+            Logger = logger; 
             DateTimeUtils = dateTimeUtils;
 
             #region Getting Properties from command line or environment
-            var identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerIdentification", variableName: "brokerIdentification");
-            var maxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: "brokerMaxShardingSize", fallbackValue: 1);
-            var listenedServices = BusDetails.GetListenedServicesFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerListenedServices", variableName: "brokerListenedServices"));
-            var listenedShards = BusDetails.GetListenedShardsFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerListenedShards", variableName: "brokerListenedShards", fallbackValue: "1"), (uint)maxShardingSize);
-            _autoAck = propertyRetriever.CheckFromCommandLine("autoAck");
+            var identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerIdentificationProperty, variableName: BrokerIdentificationProperty, fallbackValue: BrokerIdentificationFallbackValue);
+            var maxShardingSize = propertyRetriever.RetrieveFromEnvironment(BrokerMaxShardingSizeProperty, BrokerMaxShardingSizeFallbackValue);
+            var listenedServices = BusDetails.GetListenedServicesFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedServicesProperty, variableName: BrokerListenedServicesProperty, fallbackValue: string.Format(BrokerListenedServicesFallbackValue, identification)));
+            var listenedShards = BusDetails.GetListenedShardsFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedShardsProperty, variableName: BrokerListenedShardsProperty, fallbackValue: string.Format(BrokerListenedShardsFallbackValue, maxShardingSize-1)), (uint)maxShardingSize);
+            _autoAck = propertyRetriever.CheckFromCommandLine(BrokerAutoAckProperty);
+            
             Logger.LogDebug($"Receiving with MaxShardingSize: {maxShardingSize}");
             Logger.LogDebug($"Listening Services {string.Join(',', listenedServices)}");
             Logger.LogDebug($"Listening Shards {string.Join(',', listenedShards)}");
@@ -202,8 +204,5 @@
             await (Task)afterHandle.Invoke(handler, arguments);
             // ReSharper restore PossibleNullReferenceException
         }
-
-
-
     }
 }

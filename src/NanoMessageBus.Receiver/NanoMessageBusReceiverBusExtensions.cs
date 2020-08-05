@@ -4,6 +4,7 @@
     using System.Linq;
     using Abstractions.Interfaces;
     using Abstractions.Services;
+    using DateTimeUtils;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -16,6 +17,7 @@
         public static IServiceCollection AddReceiverBus(this IServiceCollection @this)
         {
             @this.AddPropertyRetriever();
+            @this.AddDateTimeUtils();
             @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -33,7 +35,7 @@
 
         public static ServiceProvider LoadReceiverBus(this ServiceProvider @this)
         {
-            @this.GetService<IReceiverBus>();
+            var _ = @this.GetService<IReceiverBus>();
             return @this;
         }
 
