@@ -25,7 +25,7 @@
 
         public static ServiceProvider LoadSenderBus(this ServiceProvider @this)
         {
-            var bus = @this.GetService<ISenderBus>();
+            var _ = @this.GetService<ISenderBus>();
             return @this;
         }
 

@@ -1,10 +1,7 @@
 ﻿namespace NanoMessageBus.Sender.Test
 {
-    using System;
-    using System.Collections;
     using System.Collections.Generic;
     using Abstractions.Interfaces;
-    using Abstractions.Services;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
