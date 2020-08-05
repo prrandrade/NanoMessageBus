@@ -6,22 +6,22 @@
 
     public abstract class MessageHandlerBase<TMessage> : IMessageHandler<TMessage> where TMessage : IMessage
     {
-        public virtual Task RegisterStatistics(long prepareToSendAt, long sentAt, long receivedAt, long handledAt)
+        public virtual Task RegisterStatisticsAsync(long prepareToSendAt, long sentAt, long receivedAt, long handledAt)
         {
             return Task.CompletedTask;
         }
 
-        public virtual Task<bool> BeforeHandle(TMessage message)
+        public virtual Task<bool> BeforeHandleAsync(TMessage message)
         {
             return Task.FromResult(true);
         }
 
-        public virtual Task Handle(TMessage message)
+        public virtual Task HandleAsync(TMessage message)
         {
             return Task.CompletedTask;
         }
 
-        public virtual Task AfterHandle(TMessage message)
+        public virtual Task AfterHandleAsync(TMessage message)
         {
             return Task.CompletedTask;
         }

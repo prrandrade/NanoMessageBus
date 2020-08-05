@@ -14,18 +14,13 @@
             _logger = logger;
         }
 
-        public override async Task RegisterStatistics(long prepareToSendAt, long sentAt, long receivedAt, long handledAt)
+        public override async Task RegisterStatisticsAsync(long prepareToSendAt, long sentAt, long receivedAt, long handledAt)
         {
             var prepareToSendDate = DateTime.FromBinary(prepareToSendAt);
             var sentAtDate = DateTime.FromBinary(sentAt);
             var receivedAtDate = DateTime.FromBinary(receivedAt);
             var handledAtDate = DateTime.FromBinary(handledAt);
             _logger.LogInformation($"Total time: {(handledAtDate-prepareToSendDate).TotalMilliseconds}");
-            await Task.CompletedTask;
-        }
-
-        public override async Task Handle(ExampleMessage message)
-        {
             await Task.CompletedTask;
         }
     }

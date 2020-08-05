@@ -7,12 +7,12 @@
 
     public interface IMessageHandler<in TMessage> : IMessageHandler where TMessage : IMessage
     {
-        Task RegisterStatistics(long prepareToSendAt, long sentAt, long receivedAt, long handledAt);
+        Task RegisterStatisticsAsync(long prepareToSendAt, long sentAt, long receivedAt, long handledAt);
 
-        Task<bool> BeforeHandle(TMessage message);
+        Task<bool> BeforeHandleAsync(TMessage message);
 
-        Task Handle(TMessage message);
+        Task HandleAsync(TMessage message);
 
-        Task AfterHandle(TMessage message);
+        Task AfterHandleAsync(TMessage message);
     }
 }

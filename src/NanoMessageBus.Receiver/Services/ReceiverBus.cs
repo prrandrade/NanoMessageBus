@@ -9,7 +9,6 @@
     using Extensions;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Logging;
     using PropertyRetriever.Interfaces;
     using RabbitMQ.Client;
     using RabbitMQ.Client.Events;
@@ -18,7 +17,7 @@
     public class ReceiverBus : IReceiverBus
     {
         // injected dependencies
-        private ILogger<ReceiverBus> Logger { get; }
+        private ILoggerFacade<ReceiverBus> Logger { get; }
         private IDateTimeUtils DateTimeUtils { get; }
 
         // properties to control consumers and queues for this consumer
@@ -32,9 +31,8 @@
 
         // private fields - rabbitmq
         private IConnectionFactory ConnectionFactory { get; }
-        private IConnection Connection { get; }
 
-        public ReceiverBus(ILogger<ReceiverBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager,
+        public ReceiverBus(ILoggerFacade<ReceiverBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager,
             IServiceScopeFactory serviceScopeFactory, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils,
             IEnumerable<IMessageHandler> handlers)
         {
@@ -43,7 +41,12 @@
 
             #region Getting Properties from command line or environment
             var identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerIdentificationProperty, variableName: BrokerIdentificationProperty, fallbackValue: BrokerIdentificationFallbackValue);
-            var maxShardingSize = propertyRetriever.RetrieveFromEnvironment(BrokerMaxShardingSizeProperty, BrokerMaxShardingSizeFallbackValue);
+            var maxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: BrokerMaxShardingSizeProperty, fallbackValue: BrokerMaxShardingSizeFallbackValue);
+            if (maxShardingSize <= 0)
+            {
+                Logger.LogWarning($"Property {BrokerIdentificationProperty} is invalid, will be treated as 1!");
+                maxShardingSize = 1;
+            }
             var listenedServices = BusDetails.GetListenedServicesFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedServicesProperty, variableName: BrokerListenedServicesProperty, fallbackValue: string.Format(BrokerListenedServicesFallbackValue, identification)));
             var listenedShards = BusDetails.GetListenedShardsFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedShardsProperty, variableName: BrokerListenedShardsProperty, fallbackValue: string.Format(BrokerListenedShardsFallbackValue, maxShardingSize-1)), (uint)maxShardingSize);
             _autoAck = propertyRetriever.CheckFromCommandLine(BrokerAutoAckProperty);
@@ -77,14 +80,13 @@
             var password = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerPassword", variableName: "brokerPassword", fallbackValue: "guest");
             var prefetchSize = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: "brokerPrefetchSize", variableName: "brokerPrefetchSize", fallbackValue: (ushort)100);
             ConnectionFactory = connectionFactoryManager.GetConnectionFactory(username, virtualHost, password, true);
-
-            Connection = ConnectionFactory.CreateConnection(hostnames.Split(','));
+            var connection = ConnectionFactory.CreateConnection(hostnames.Split(','));
 
             #endregion
 
             #region Creating the queues and binding with the exchanges
 
-            using (var baseChannel = Connection.CreateModel())
+            using (var baseChannel = connection.CreateModel())
             {
                 foreach (var listenedShard in listenedShards)
                 {
@@ -108,7 +110,7 @@
 
             foreach (var queue in Queues)
             {
-                var channel = Connection.CreateModel();
+                var channel = connection.CreateModel();
                 channel.BasicQos(0, prefetchSize, true);
                 Channels.Add(queue, channel);
                 var asyncConsumer = new EventingBasicConsumer(channel);

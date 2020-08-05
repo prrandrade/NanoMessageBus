@@ -19,6 +19,7 @@
             @this.AddPropertyRetriever();
             @this.AddDateTimeUtils();
             @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
+            @this.TryAddScoped(typeof(ILoggerFacade<>), typeof(LoggerFacade<>));
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 foreach (var mytype in assembly.GetTypes().Where(mytype => mytype.GetInterfaces().Contains(typeof(IMessageHandler)))) 

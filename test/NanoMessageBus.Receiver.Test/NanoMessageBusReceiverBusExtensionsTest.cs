@@ -1,7 +1,9 @@
 namespace NanoMessageBus.Receiver.Test
 {
     using System.Collections.Generic;
+    using System.Linq;
     using Abstractions.Interfaces;
+    using Handlers;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -34,6 +36,10 @@ namespace NanoMessageBus.Receiver.Test
             // assert
             Assert.NotNull(container.GetService<IReceiverBus>());
             Assert.Equal(receiverBus1, receiverBus2);
+
+            var handlers = container.GetServices<IMessageHandler>().ToList();
+            Assert.Equal(1, handlers.Count(x => x.GetType() == typeof(DummyGuidHandler)));
+            Assert.Equal(1, handlers.Count(x => x.GetType() == typeof(DummyIntHandler)));
         }
 
         [Fact]
@@ -52,7 +58,7 @@ namespace NanoMessageBus.Receiver.Test
             services.TryAddSingleton(mockConnectionFactoryManager.Object);
             services.AddReceiverBus();
             var container = services.BuildServiceProvider();
-            
+
             // act
             container.LoadReceiverBus();
 
@@ -78,7 +84,7 @@ namespace NanoMessageBus.Receiver.Test
             services.TryAddSingleton(mockConnectionFactoryManager.Object);
             services.AddReceiverBus();
             var container = services.BuildServiceProvider();
-            
+
             // act
             container.ConsumeMessages();
 
