@@ -1,4 +1,7 @@
-﻿namespace NanoMessageBus.Receiver.Services
+﻿using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("NanoMessageBus.Receiver.Test")]
+namespace NanoMessageBus.Receiver.Services
 {
     using System;
     using System.Collections.Generic;
@@ -36,89 +39,105 @@
         private IConnectionFactory ConnectionFactory { get; }
 
         public ReceiverBus(ILoggerFacade<ReceiverBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager,
-            IServiceScopeFactory serviceScopeFactory, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils,
+            IRabbitMqEventingBasicConsumerManager basicConsumerManager, IServiceScopeFactory serviceScopeFactory, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils,
             IEnumerable<IMessageHandler> handlers)
         {
-            Logger = logger;
-            DateTimeUtils = dateTimeUtils;
-            ServiceScopeFactory = serviceScopeFactory;
-
-            #region Getting Properties from command line or environment
-            var identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerIdentificationProperty, variableName: BrokerIdentificationProperty, fallbackValue: BrokerIdentificationFallbackValue);
-            var maxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: BrokerMaxShardingSizeProperty, fallbackValue: BrokerMaxShardingSizeFallbackValue);
-            if (maxShardingSize <= 0)
+            try
             {
-                Logger.LogWarning($"Property {BrokerIdentificationProperty} is invalid, will be treated as 1!");
-                maxShardingSize = 1;
-            }
-            ListenedServices = BusDetails.GetListenedServicesFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedServicesProperty, variableName: BrokerListenedServicesProperty, fallbackValue: string.Format(BrokerListenedServicesFallbackValue, identification)));
-            ListenedShards = BusDetails.GetListenedShardsFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedShardsProperty, variableName: BrokerListenedShardsProperty, fallbackValue: string.Format(BrokerListenedShardsFallbackValue, maxShardingSize - 1)), (uint)maxShardingSize);
-            _autoAck = propertyRetriever.CheckFromCommandLine(BrokerAutoAckProperty);
+                Logger = logger;
+                DateTimeUtils = dateTimeUtils;
+                ServiceScopeFactory = serviceScopeFactory;
 
-            Logger.LogDebug($"Receiving with MaxShardingSize: {maxShardingSize}");
-            Logger.LogDebug($"Listening Services {string.Join(',', ListenedServices)}");
-            Logger.LogDebug($"Listening Shards {string.Join(',', ListenedShards)}");
-            #endregion
+                #region Getting Properties from command line or environment
 
-            #region Loading Handlers
-            foreach (var handler in handlers)
-            {
-                var messageType = handler.GetType().GetInterfaces()[0].GetGenericArguments()[0];
-                if (!MessageTypes.ContainsKey(messageType))
+                var identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerIdentificationProperty, variableName: BrokerIdentificationProperty, fallbackValue: BrokerIdentificationFallbackValue);
+                var maxShardingSize = propertyRetriever.RetrieveFromEnvironment(variableName: BrokerMaxShardingSizeProperty, fallbackValue: BrokerMaxShardingSizeFallbackValue);
+                if (maxShardingSize <= 0)
                 {
-                    MessageTypes.Add(messageType, handler.GetType());
-                    Logger.LogDebug($"Found handler {handler.GetType().Name} for message {messageType.Name}");
+                    Logger.LogWarning($"Property {BrokerIdentificationProperty} is invalid, will be treated as 1!");
+                    maxShardingSize = 1;
                 }
-            }
-            #endregion
 
-            #region Creating Connection
+                ListenedServices = BusDetails.GetListenedServicesFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedServicesProperty, variableName: BrokerListenedServicesProperty, fallbackValue: string.Format(BrokerListenedServicesFallbackValue, identification)));
+                ListenedShards = BusDetails.GetListenedShardsFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedShardsProperty, variableName: BrokerListenedShardsProperty, fallbackValue: string.Format(BrokerListenedShardsFallbackValue, maxShardingSize - 1)), (uint)maxShardingSize);
+                _autoAck = propertyRetriever.CheckFromCommandLine(BrokerAutoAckProperty);
 
-            var hostnames = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerHostnameProperty, variableName: BrokerHostnameProperty, fallbackValue: BrokerHostnameFallbackValue);
-            var virtualHost = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerVirtualHostProperty, variableName: BrokerVirtualHostProperty, fallbackValue: BrokerVirtualHostFallbackValue);
-            var username = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerUsernameProperty, variableName: BrokerUsernameProperty, fallbackValue: BrokerUsernameFallbackValue);
-            var password = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerPasswordProperty, variableName: BrokerPasswordProperty, fallbackValue: BrokerPasswordFallbackValue);
-            var prefetchSize = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerPrefetchSizeProperty, variableName: BrokerPrefetchSizeProperty, fallbackValue: BrokerPrefetchSizeFallbackValue);
-            ConnectionFactory = connectionFactoryManager.GetConnectionFactory(username, virtualHost, password, true);
-            var connection = ConnectionFactory.CreateConnection(hostnames.Split(','));
+                Logger.LogDebug($"Receiving with MaxShardingSize: {maxShardingSize}");
+                Logger.LogDebug($"Listening Services {string.Join(',', ListenedServices)}");
+                Logger.LogDebug($"Listening Shards {string.Join(',', ListenedShards)}");
 
-            #endregion
+                #endregion
 
-            #region Creating the queues and binding with the exchanges
+                #region Loading Handlers
 
-            using (var baseChannel = connection.CreateModel())
-            {
-                foreach (var listenedShard in ListenedShards)
+                foreach (var handler in handlers)
                 {
-                    var queue = BusDetails.GetQueueName(identification, listenedShard);
-                    Queues.Add(queue);
-                    baseChannel.QueueDeclare(queue, true, false, false);
-
-                    foreach (var listenedService in ListenedServices)
+                    var messageType = handler.GetType().GetInterfaces()[0].GetGenericArguments()[0];
+                    if (!MessageTypes.ContainsKey(messageType))
                     {
-                        var exchange = BusDetails.GetExchangeName(listenedService, listenedShard);
-                        baseChannel.ExchangeDeclare(exchange, ExchangeType.Fanout, true);
-                        baseChannel.QueueBind(queue, exchange, string.Empty);
-                        Logger.LogDebug($"Binding Exchange {exchange} with Queue {queue}.");
+                        MessageTypes.Add(messageType, handler.GetType());
+                        Logger.LogDebug($"Found handler {handler.GetType().Name} for message {messageType.Name}");
                     }
                 }
-                baseChannel.Close();
+
+                #endregion
+
+                #region Creating Connection
+
+                var hostnames = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerHostnameProperty, variableName: BrokerHostnameProperty, fallbackValue: BrokerHostnameFallbackValue);
+                var virtualHost = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerVirtualHostProperty, variableName: BrokerVirtualHostProperty, fallbackValue: BrokerVirtualHostFallbackValue);
+                var username = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerUsernameProperty, variableName: BrokerUsernameProperty, fallbackValue: BrokerUsernameFallbackValue);
+                var password = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerPasswordProperty, variableName: BrokerPasswordProperty, fallbackValue: BrokerPasswordFallbackValue);
+                var prefetchSize = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerPrefetchSizeProperty, variableName: BrokerPrefetchSizeProperty, fallbackValue: BrokerPrefetchSizeFallbackValue);
+                ConnectionFactory = connectionFactoryManager.GetConnectionFactory(username, virtualHost, password, true);
+                var connection = ConnectionFactory.CreateConnection(hostnames.Split(','));
+
+                #endregion
+
+                #region Creating the queues and binding with the exchanges
+
+                using (var baseChannel = connection.CreateModel())
+                {
+                    foreach (var listenedShard in ListenedShards)
+                    {
+                        var queue = BusDetails.GetQueueName(identification, listenedShard);
+                        Queues.Add(queue);
+                        baseChannel.QueueDeclare(queue, true, false, false);
+
+                        foreach (var listenedService in ListenedServices)
+                        {
+                            var exchange = BusDetails.GetExchangeName(listenedService, listenedShard);
+                            baseChannel.ExchangeDeclare(exchange, ExchangeType.Fanout, true);
+                            baseChannel.QueueBind(queue, exchange, string.Empty);
+                            Logger.LogDebug($"Binding Exchange {exchange} with Queue {queue}.");
+                        }
+                    }
+
+                    baseChannel.Close();
+                }
+
+                #endregion
+
+                #region Creating individual channel for each queue
+
+                foreach (var queue in Queues)
+                {
+                    var channel = connection.CreateModel();
+                    channel.BasicQos(0, prefetchSize, true);
+                    Channels.Add(queue, channel);
+                    var asyncConsumer = basicConsumerManager.GetNewEventingBasicConsumer(channel);
+
+                    asyncConsumer.Received += async (o, ea) => await ConsumeMessageAsync(channel, ea);
+                    Consumers.Add(queue, asyncConsumer);
+                    Logger.LogDebug($"Preparing to consume queue {queue}.");
+                }
+
+                #endregion
             }
-
-            #endregion
-
-            #region Creating individual channel for each queue
-            foreach (var queue in Queues)
+            catch (Exception ex)
             {
-                var channel = connection.CreateModel();
-                channel.BasicQos(0, prefetchSize, true);
-                Channels.Add(queue, channel);
-                var asyncConsumer = new EventingBasicConsumer(channel);
-                asyncConsumer.Received += (snd, ea) => AsyncConsumerOnReceived(channel, ea);
-                Consumers.Add(queue, asyncConsumer);
-                Logger.LogDebug($"Preparing to consume queue {queue}.");
+                throw new InvalidOperationException("A error has occurred, impossible to continue. Please see the inner exception for details.", ex);
             }
-            #endregion
         }
 
         public void StartConsumer()
@@ -130,7 +149,7 @@
             }
         }
 
-        internal async void AsyncConsumerOnReceived(IModel channel, BasicDeliverEventArgs ea)
+        internal async Task ConsumeMessageAsync(IModel channel, BasicDeliverEventArgs ea)
         {
             try
             {
@@ -138,16 +157,11 @@
                 var sentAt = (long)ea.BasicProperties.Headers["sentAt"];
                 var receivedAt = DateTimeUtils.UtcNow().ToBinary();
 
-                var (receivedConvertedMessage, receivedMessageType) = await ProcessDeliveredMessage(ea);
+                var (receivedConvertedMessage, receivedMessageType) = await ProcessDeliveredMessageAsync(ea);
                 if (receivedConvertedMessage == null) return;
 
                 var handlerType = MessageTypes[receivedMessageType];
-                await ProcessReceivedMessage(prepareToSendAt, sentAt, receivedAt, receivedConvertedMessage, handlerType);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Unsupported message received!");
-                throw;
+                await ProcessReceivedMessageAsync(prepareToSendAt, sentAt, receivedAt, receivedConvertedMessage, handlerType);
             }
             finally
             {
@@ -156,7 +170,7 @@
             }
         }
 
-        internal async Task<(IMessage, Type)> ProcessDeliveredMessage(BasicDeliverEventArgs ea)
+        private async Task<(IMessage, Type)> ProcessDeliveredMessageAsync(BasicDeliverEventArgs ea)
         {
             var receivedMessageType = Type.GetType(ea.BasicProperties.Type);
             if (receivedMessageType == null)
@@ -167,7 +181,7 @@
 
             if (!MessageTypes.ContainsKey(receivedMessageType))
             {
-                Logger.LogDebug($"There's no handler for {ea.BasicProperties.Type}. This message will be ignored!");
+                Logger.LogWarning($"There's no handler for {ea.BasicProperties.Type}. This message will be ignored!");
                 return (null, null);
             }
 
@@ -177,7 +191,7 @@
             return (receivedConvertedMessage, receivedMessageType);
         }
 
-        internal async Task ProcessReceivedMessage(long prepareToSendAt, long sentAt, long receivedAt, IMessage receivedConvertedMessage, Type handlerType)
+        private async Task ProcessReceivedMessageAsync(long prepareToSendAt, long sentAt, long receivedAt, IMessage receivedConvertedMessage, Type handlerType)
         {
             using var scope = ServiceScopeFactory.CreateScope();
             var handler = scope.ServiceProvider.GetService(handlerType);
@@ -185,18 +199,6 @@
             var beforeHandle = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.BeforeHandleAsync));
             var handle = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.HandleAsync));
             var afterHandle = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.AfterHandleAsync));
-
-            if (registerStatistics == null || beforeHandle == null || handle == null || afterHandle == null)
-                throw new ArgumentException("Error while retrieving handle methods, message will not be processed!");
-
-            if (registerStatistics.ReturnType != typeof(Task))
-                throw new ArgumentException("Error with registerStatistics return method, message will not be processed!");
-            if (beforeHandle.ReturnType != typeof(Task<bool>))
-                throw new ArgumentException("Error with beforeHandle return method, message will not be processed!");
-            if (handle.ReturnType != typeof(Task))
-                throw new ArgumentException("Error with handle return method, message will not be processed!");
-            if (afterHandle.ReturnType != typeof(Task))
-                throw new ArgumentException("Error with afterHandle return method, message will not be processed!");
 
             var statisticsArguments = new object[] { prepareToSendAt, sentAt, receivedAt, DateTimeUtils.UtcNow().ToBinary() };
             var arguments = new object[] { receivedConvertedMessage };

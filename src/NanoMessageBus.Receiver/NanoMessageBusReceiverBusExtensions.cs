@@ -29,6 +29,7 @@
                     @this.AddScoped(mytype);
                 }
             }
+            @this.TryAddSingleton<IRabbitMqEventingBasicConsumerManager, RabbitMqEventingBasicConsumerManager>();
             @this.TryAddSingleton<IRabbitMqConnectionFactoryManager, RabbitMqConnectionFactoryManager>();
             @this.AddSingleton<IReceiverBus, ReceiverBus>();
             return @this;
