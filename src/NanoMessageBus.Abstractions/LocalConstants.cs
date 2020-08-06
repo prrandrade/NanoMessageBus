@@ -27,5 +27,8 @@
 
         public const string BrokerPasswordProperty = "brokerPassword";
         public const string BrokerPasswordFallbackValue = "guest";
+
+        public const string BrokerPrefetchSizeProperty = "brokerPrefetchSize";
+        public const ushort BrokerPrefetchSizeFallbackValue = 100;
     }
 }

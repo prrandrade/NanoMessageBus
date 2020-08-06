@@ -20,6 +20,7 @@
             var sentAtDate = DateTime.FromBinary(sentAt);
             var receivedAtDate = DateTime.FromBinary(receivedAt);
             var handledAtDate = DateTime.FromBinary(handledAt);
+            _logger.LogInformation($"Travel time: {(receivedAtDate-sentAtDate).TotalMilliseconds}");
             _logger.LogInformation($"Total time: {(handledAtDate-prepareToSendDate).TotalMilliseconds}");
             await Task.CompletedTask;
         }
