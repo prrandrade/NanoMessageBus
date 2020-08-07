@@ -2,6 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <PackageId>NanoMessageBus.Receiver</PackageId>
+    <PackageDescription>Injectable dependency for multithreaded RabbitMQ message consuming. Best used with NanoMessageBus.Sender package.</PackageDescription>
+    <Authors><![CDATA[Paulo Roberto Ramos de Andrade]]></Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/prrandrade/NanoMessageBus</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>rabbitmq message send receive broker async messages amqp multithread</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
