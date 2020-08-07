@@ -10,7 +10,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/prrandrade/NanoMessageBus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>rabbitmq message send receive broker async messages amqp multithread</PackageTags>
+    <PackageTags>rabbitmq message send receive broker async messages amqp multithread messagebus bus nano nanomessagebus</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
