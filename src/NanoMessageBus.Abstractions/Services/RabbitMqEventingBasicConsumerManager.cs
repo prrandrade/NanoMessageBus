@@ -1,6 +1,5 @@
 ﻿namespace NanoMessageBus.Abstractions.Services
 {
-    using System;
     using Interfaces;
     using RabbitMQ.Client;
     using RabbitMQ.Client.Events;

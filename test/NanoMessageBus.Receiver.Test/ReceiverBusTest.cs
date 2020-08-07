@@ -348,14 +348,63 @@
                 ChannelMock.Verify(x => x.BasicAck(ea.DeliveryTag, false), Times.Once);
         }
 
+        #endregion
+
+        #region Consuming Messages via event 
+
         [Theory]
+        [InlineData("exampleService", 10, "0-9", 50, true)]
         [InlineData("exampleService", 0, "0", 10, false)]
-        [InlineData("exampleService", 0, "0", 10, true)]
-        public async void ConsumeMessageAsync_IncorrectHandler(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
+        public async void ConsumeMessageAsync_IntMessageId_ViaEvent(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
         {
+            // arrange
+            PrepareForReceiverBus(identification, maxShardingSize, listenedShards, prefetch, autoAck);
 
+            var prepareToSendAt = new DateTime(2002, 1, 1);
+            var sentAt = new DateTime(2003, 1, 1);
+            var receivedAt = new DateTime(2004, 1, 1);
+            var handledAt = new DateTime(2005, 1, 1);
+
+            DateTimeUtilsMock
+                .SetupSequence(x => x.UtcNow())
+                .Returns(receivedAt)
+                .Returns(handledAt);
+
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Handlers);
+
+            var message = new DummyIntMessage { Id = 0 };
+            var stream = new MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, message, message.GetType());
+            var byteContent = stream.ToArray();
+            var ea = new BasicDeliverEventArgs
+            {
+                Body = byteContent,
+                DeliveryTag = ulong.MaxValue,
+                BasicProperties = new DummyBasicProperties
+                {
+                    Type = message.GetType().AssemblyQualifiedName,
+                    Headers = new Dictionary<string, object>
+                    {
+                        {"prepareToSendAt", prepareToSendAt.ToBinary()},
+                        {"sentAt", sentAt.ToBinary()}
+                    }
+                }
+            };
+
+            // act
+            var queue = $"queue.{identification}.{message.Id}";
+            receiverBus.Consumers[queue].HandleBasicDeliver(Guid.NewGuid().ToString(), ea.DeliveryTag, false, string.Empty, string.Empty, ea.BasicProperties, byteContent);
+
+            // assert
+            var handler = (DummyIntHandler) Handlers.First(x => x.GetType() == typeof(DummyIntHandler));
+            Assert.True(handler.RegisterStatisticsAsyncPassed);
+            Assert.True(handler.BeforeHandlerAsyncPassed);
+            Assert.True(handler.HandleAsyncPassed);
+            Assert.True(handler.AfterHandleAsyncPassed);
+
+            if (!autoAck)
+                ChannelMock.Verify(x => x.BasicAck(ea.DeliveryTag, false), Times.Once);
         }
-
 
         #endregion
 
