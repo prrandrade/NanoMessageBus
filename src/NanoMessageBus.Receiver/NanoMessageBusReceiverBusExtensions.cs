@@ -35,10 +35,9 @@
             return @this;
         }
 
-        public static ServiceProvider LoadReceiverBus(this ServiceProvider @this)
+        public static void UseReceiverBus(this ServiceProvider @this)
         {
             var _ = @this.GetService<IReceiverBus>();
-            return @this;
         }
 
         public static void ConsumeMessages(this ServiceProvider @this)

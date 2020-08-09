@@ -27,10 +27,9 @@
             services.AddSingleton<Repository.Repository>();
 
             // creating service provider container with all dependency injections
-            var container = services
-                .BuildServiceProvider()
-                .LoadSenderBus()
-                .LoadReceiverBus();
+            var container = services.BuildServiceProvider();
+            container.UseSenderBus();
+            container.UseReceiverBus();
 
             // start consuming messages
             container.ConsumeMessages();

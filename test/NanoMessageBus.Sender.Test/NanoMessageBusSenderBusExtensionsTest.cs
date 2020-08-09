@@ -38,7 +38,7 @@
         }
 
         [Fact]
-        public void LoadSenderBus()
+        public void UseSenderBus()
         {
             // arrange
             var mockConnectionFactoryManager = new Mock<IRabbitMqConnectionFactoryManager>();
@@ -55,7 +55,7 @@
             var container = services.BuildServiceProvider();
             
             // act
-            container.LoadSenderBus();
+            container.UseSenderBus();
 
             // assert
             mockConnectionFactoryManager.Verify(x => x.GetConnectionFactory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);

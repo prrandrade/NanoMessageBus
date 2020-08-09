@@ -23,7 +23,7 @@
             return @this;
         }
 
-        public static ServiceProvider LoadSenderBus(this ServiceProvider @this)
+        public static ServiceProvider UseSenderBus(this ServiceProvider @this)
         {
             var _ = @this.GetService<ISenderBus>();
             return @this;

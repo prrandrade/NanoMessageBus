@@ -43,7 +43,7 @@ namespace NanoMessageBus.Receiver.Test
         }
 
         [Fact]
-        public void LoadReceiverBus()
+        public void UseReceiverBus()
         {
             // arrange
             var mockConnectionFactoryManager = new Mock<IRabbitMqConnectionFactoryManager>();
@@ -60,7 +60,7 @@ namespace NanoMessageBus.Receiver.Test
             var container = services.BuildServiceProvider();
 
             // act
-            container.LoadReceiverBus();
+            container.UseReceiverBus();
 
             // assert
             mockConnectionFactoryManager.Verify(x => x.GetConnectionFactory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
