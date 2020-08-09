@@ -123,7 +123,6 @@
 
         [Theory]
         [InlineData("exampleService", 10, "0-9", 50, true)]
-        [InlineData("exampleService", 0, "0", 10, false)]
         public void StartConsumer(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
         {
             // arrange
@@ -146,7 +145,6 @@
 
         [Theory]
         [InlineData("exampleService", 10, "0-9", 50, true)]
-        [InlineData("exampleService", 0, "0", 10, false)]
         public async void ConsumeMessageAsync_IntMessageId(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
         {
             // arrange
@@ -198,7 +196,6 @@
         }
 
         [Theory]
-        [InlineData("exampleService", 10, "0-9", 50, false)]
         [InlineData("exampleService", 0, "0", 10, true)]
         public async void ConsumeMessageAsync_GuidMessageId(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
         {
@@ -251,7 +248,6 @@
         }
 
         [Theory]
-        [InlineData("exampleService", 0, "0", 10, false)]
         [InlineData("exampleService", 0, "0", 10, true)]
         public async void ConsumeMessageAsync_UnrecognizableType(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
         {
@@ -300,7 +296,6 @@
         }
 
         [Theory]
-        [InlineData("exampleService", 0, "0", 10, false)]
         [InlineData("exampleService", 0, "0", 10, true)]
         public async void ConsumeMessageAsync_UnHandlebleType(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
         {
@@ -354,7 +349,6 @@
 
         [Theory]
         [InlineData("exampleService", 10, "0-9", 50, true)]
-        [InlineData("exampleService", 0, "0", 10, false)]
         public async void ConsumeMessageAsync_IntMessageId_ViaEvent(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
         {
             // arrange
