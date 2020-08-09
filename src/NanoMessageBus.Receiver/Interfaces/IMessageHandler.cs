@@ -1,5 +1,6 @@
 ﻿namespace NanoMessageBus.Receiver.Interfaces
 {
+    using System;
     using System.Threading.Tasks;
     using Abstractions.Interfaces;
 
@@ -7,7 +8,7 @@
 
     public interface IMessageHandler<in TMessage> : IMessageHandler where TMessage : IMessage
     {
-        Task RegisterStatisticsAsync(long prepareToSendAt, long sentAt, long receivedAt, long handledAt);
+        Task RegisterStatisticsAsync(DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt);
 
         Task<bool> BeforeHandleAsync(TMessage message);
 

@@ -60,7 +60,8 @@ namespace NanoMessageBus.Receiver.Services
 
                 ListenedServices = BusDetails.GetListenedServicesFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedServicesProperty, variableName: BrokerListenedServicesProperty, fallbackValue: string.Format(BrokerListenedServicesFallbackValue, identification)));
                 ListenedShards = BusDetails.GetListenedShardsFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedShardsProperty, variableName: BrokerListenedShardsProperty, fallbackValue: string.Format(BrokerListenedShardsFallbackValue, maxShardingSize - 1)), (uint)maxShardingSize);
-                _autoAck = propertyRetriever.CheckFromCommandLine(BrokerAutoAckProperty);
+                //_autoAck = propertyRetriever.CheckFromCommandLine(BrokerAutoAckProperty);
+                _autoAck = true;
 
                 Logger.LogDebug($"Receiving with MaxShardingSize: {maxShardingSize}");
                 Logger.LogDebug($"Listening Services {string.Join(',', ListenedServices)}");
@@ -200,7 +201,7 @@ namespace NanoMessageBus.Receiver.Services
             var handle = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.HandleAsync));
             var afterHandle = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.AfterHandleAsync));
 
-            var statisticsArguments = new object[] { prepareToSendAt, sentAt, receivedAt, DateTimeUtils.UtcNow().ToBinary() };
+            var statisticsArguments = new object[] { DateTime.FromBinary(prepareToSendAt), DateTime.FromBinary(sentAt), DateTime.FromBinary(receivedAt), DateTimeUtils.UtcNow() };
             var arguments = new object[] { receivedConvertedMessage };
 
             // ReSharper disable PossibleNullReferenceException

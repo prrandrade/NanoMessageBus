@@ -17,13 +17,10 @@
             _repository = repository;
         }
 
-        public override async Task RegisterStatisticsAsync(long prepareToSendAt, long sentAt, long receivedAt, long handledAt)
+        public override async Task RegisterStatisticsAsync(DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt)
         {
-            var prepareToSendDate = DateTime.FromBinary(prepareToSendAt);
-            var sentAtDate = DateTime.FromBinary(sentAt);
-            var receivedAtDate = DateTime.FromBinary(receivedAt);
-            var handledAtDate = DateTime.FromBinary(handledAt);
-            _repository.SaveTime((receivedAtDate-sentAtDate).TotalMilliseconds, (handledAtDate-prepareToSendDate).TotalMilliseconds);
+
+            _repository.SaveTime((receivedAt-sentAt).TotalMilliseconds, (handledAt-prepareToSendAt).TotalMilliseconds);
             await Task.CompletedTask;
         }
     }

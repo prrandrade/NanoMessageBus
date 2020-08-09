@@ -1,12 +1,13 @@
 ﻿namespace NanoMessageBus.Receiver.Services
 {
+    using System;
     using System.Threading.Tasks;
     using Abstractions.Interfaces;
     using Interfaces;
 
     public abstract class MessageHandlerBase<TMessage> : IMessageHandler<TMessage> where TMessage : IMessage
     {
-        public virtual Task RegisterStatisticsAsync(long prepareToSendAt, long sentAt, long receivedAt, long handledAt)
+        public virtual Task RegisterStatisticsAsync(DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt)
         {
             return Task.CompletedTask;
         }

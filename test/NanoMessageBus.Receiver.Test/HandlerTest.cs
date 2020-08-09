@@ -1,5 +1,6 @@
 ﻿namespace NanoMessageBus.Receiver.Test
 {
+    using System;
     using System.Threading.Tasks;
     using Handlers;
     using Models;
@@ -15,7 +16,7 @@
             var handler = new DummyGuidHandler();
 
             // act
-            await handler.RegisterStatisticsAsync(long.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue);
+            await handler.RegisterStatisticsAsync(DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow);
             await handler.BeforeHandleAsync(message);
             await handler.HandleAsync(message);
             await handler.AfterHandleAsync(message);
@@ -35,7 +36,7 @@
             var handler = new DummyIntHandler();
 
             // act
-            await handler.RegisterStatisticsAsync(long.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue);
+            await handler.RegisterStatisticsAsync(DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow);
             await handler.BeforeHandleAsync(message);
             await handler.HandleAsync(message);
             await handler.AfterHandleAsync(message);

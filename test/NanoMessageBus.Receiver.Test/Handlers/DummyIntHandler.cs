@@ -1,5 +1,6 @@
 ﻿namespace NanoMessageBus.Receiver.Test.Handlers
 {
+    using System;
     using System.Threading.Tasks;
     using Models;
     using Services;
@@ -11,7 +12,7 @@
         public bool HandleAsyncPassed { get; private set; }
         public bool AfterHandleAsyncPassed { get; private set; }
 
-        public override async Task RegisterStatisticsAsync(long prepareToSendAt, long sentAt, long receivedAt, long handledAt)
+        public override async Task RegisterStatisticsAsync(DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt)
         {
             RegisterStatisticsAsyncPassed = true;
             await base.RegisterStatisticsAsync(prepareToSendAt, sentAt, receivedAt, handledAt);
