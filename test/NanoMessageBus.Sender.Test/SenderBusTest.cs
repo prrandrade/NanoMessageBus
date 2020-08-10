@@ -144,6 +144,99 @@ namespace NanoMessageBus.Sender.Test
 
         #region SendAsync
 
+        [Fact]
+        public async Task SendAsync_Default()
+        {
+            // arrange
+            const string identification = "identification";
+            const int maxShardingSize = 10;
+            const string rabbitHostNames = "server1:5872,server2:5872";
+            const string rabbitVirtualHost = "virtualHost";
+            const string rabbitUsername = "rabbitUserName";
+            const string rabbitPassword = "rabbitPassword";
+
+            var prepareToSendAt = new DateTime(2002, 1, 1);
+            var sentAt = new DateTime(2003, 1, 1);
+
+            #region DateTimeUtils
+
+            DateTimeUtilsMock
+                .SetupSequence(x => x.UtcNow())
+                .Returns(prepareToSendAt)
+                .Returns(sentAt);
+
+            #endregion
+
+            #region PropertyRetriever
+            PropertyRetrieverMock
+                   .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerIdentification", "brokerIdentification", It.IsAny<string>()))
+                   .Returns(identification);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromEnvironment("brokerMaxShardingSize", It.IsAny<int>()))
+                .Returns(maxShardingSize);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerHostname", "brokerHostname", It.IsAny<string>()))
+                .Returns(rabbitHostNames);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerVirtualHost", "brokerVirtualHost", It.IsAny<string>()))
+                .Returns(rabbitVirtualHost);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerUsername", "brokerUsername", It.IsAny<string>()))
+                .Returns(rabbitUsername);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerPassword", "brokerPassword", It.IsAny<string>()))
+                .Returns(rabbitPassword);
+            #endregion
+
+            #region Connection Factory Manager
+
+            var basicProperties = new DummyBasicProperties();
+
+            ConnectionFactoryManagerMock
+                .Setup(x => x.GetConnectionFactory(rabbitUsername, rabbitVirtualHost, rabbitPassword, true))
+                .Returns(ConnectionFactoryMock.Object);
+
+            ConnectionFactoryMock
+                .Setup(x => x.CreateConnection(It.IsAny<IList<string>>()))
+                .Returns(ConnectionMock.Object);
+
+            ConnectionMock
+                .SetupSequence(x => x.CreateModel())
+                .Returns(ChannelMock.Object)
+                .Returns(SecondChannelMock.Object);
+
+            SecondChannelMock
+                .Setup(x => x.CreateBasicProperties())
+                .Returns(basicProperties);
+
+            #endregion
+
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object);
+            var message = new DummyIntMessage { Id = 0 };
+            var expectedExchangeName = $"exchange.{identification}.0";
+
+            // act
+            await senderBus.SendAsync(message);
+
+            // assert
+            Assert.Equal(prepareToSendAt.ToBinary(), basicProperties.Headers["prepareToSendAt"]);
+            Assert.Equal(sentAt.ToBinary(), basicProperties.Headers["sentAt"]);
+            Assert.Equal(2, basicProperties.DeliveryMode);
+            Assert.Equal(typeof(DummyIntMessage).AssemblyQualifiedName, basicProperties.Type);
+            Assert.True(basicProperties.Persistent);
+            Assert.Equal(0, basicProperties.Priority);
+
+            SecondChannelMock.Verify(x => x.CreateBasicProperties(), Times.Once);
+            SecondChannelMock.Verify(x => x.BasicPublish(expectedExchangeName, string.Empty, false, basicProperties, It.IsAny<ReadOnlyMemory<byte>>()), Times.Once);
+            SecondChannelMock.Verify(x => x.Close(), Times.Once);
+            SecondChannelMock.Verify(x => x.Dispose(), Times.Once);
+        }
+
         [Theory]
         [InlineData(MessagePriority.NormalPriority, 0)]
         [InlineData(MessagePriority.Level1Priority, 1)]
@@ -235,6 +328,100 @@ namespace NanoMessageBus.Sender.Test
             Assert.Equal(typeof(DummyIntMessage).AssemblyQualifiedName, basicProperties.Type);
             Assert.True(basicProperties.Persistent);
             Assert.Equal(expectedPriority, basicProperties.Priority);
+
+            SecondChannelMock.Verify(x => x.CreateBasicProperties(), Times.Once);
+            SecondChannelMock.Verify(x => x.BasicPublish(expectedExchangeName, string.Empty, false, basicProperties, It.IsAny<ReadOnlyMemory<byte>>()), Times.Once);
+            SecondChannelMock.Verify(x => x.Close(), Times.Once);
+            SecondChannelMock.Verify(x => x.Dispose(), Times.Once);
+        }
+
+        [Fact]
+        public async Task SendAsync_CustomizedShardResolver()
+        {
+            // arrange
+            const string identification = "identification";
+            const int maxShardingSize = 10;
+            const string rabbitHostNames = "server1:5872,server2:5872";
+            const string rabbitVirtualHost = "virtualHost";
+            const string rabbitUsername = "rabbitUserName";
+            const string rabbitPassword = "rabbitPassword";
+
+            var prepareToSendAt = new DateTime(2002, 1, 1);
+            var sentAt = new DateTime(2003, 1, 1);
+
+            #region DateTimeUtils
+
+            DateTimeUtilsMock
+                .SetupSequence(x => x.UtcNow())
+                .Returns(prepareToSendAt)
+                .Returns(sentAt);
+
+            #endregion
+
+            #region PropertyRetriever
+            PropertyRetrieverMock
+                   .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerIdentification", "brokerIdentification", It.IsAny<string>()))
+                   .Returns(identification);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromEnvironment("brokerMaxShardingSize", It.IsAny<int>()))
+                .Returns(maxShardingSize);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerHostname", "brokerHostname", It.IsAny<string>()))
+                .Returns(rabbitHostNames);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerVirtualHost", "brokerVirtualHost", It.IsAny<string>()))
+                .Returns(rabbitVirtualHost);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerUsername", "brokerUsername", It.IsAny<string>()))
+                .Returns(rabbitUsername);
+
+            PropertyRetrieverMock
+                .Setup(x => x.RetrieveFromCommandLineOrEnvironment("brokerPassword", "brokerPassword", It.IsAny<string>()))
+                .Returns(rabbitPassword);
+            #endregion
+
+            #region Connection Factory Manager
+
+            var basicProperties = new DummyBasicProperties();
+
+            ConnectionFactoryManagerMock
+                .Setup(x => x.GetConnectionFactory(rabbitUsername, rabbitVirtualHost, rabbitPassword, true))
+                .Returns(ConnectionFactoryMock.Object);
+
+            ConnectionFactoryMock
+                .Setup(x => x.CreateConnection(It.IsAny<IList<string>>()))
+                .Returns(ConnectionMock.Object);
+
+            ConnectionMock
+                .SetupSequence(x => x.CreateModel())
+                .Returns(ChannelMock.Object)
+                .Returns(SecondChannelMock.Object);
+
+            SecondChannelMock
+                .Setup(x => x.CreateBasicProperties())
+                .Returns(basicProperties);
+
+            #endregion
+
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object);
+            var message = new DummyIntMessage { Id = 5 };
+            var expectedExchangeName = $"exchange.{identification}.0";
+            static int CustomShardResolver(object o, int i) => 0;
+
+            // act
+            await senderBus.SendAsync(message, CustomShardResolver);
+
+            // assert
+            Assert.Equal(prepareToSendAt.ToBinary(), basicProperties.Headers["prepareToSendAt"]);
+            Assert.Equal(sentAt.ToBinary(), basicProperties.Headers["sentAt"]);
+            Assert.Equal(2, basicProperties.DeliveryMode);
+            Assert.Equal(typeof(DummyIntMessage).AssemblyQualifiedName, basicProperties.Type);
+            Assert.True(basicProperties.Persistent);
+            Assert.Equal(0, basicProperties.Priority);
 
             SecondChannelMock.Verify(x => x.CreateBasicProperties(), Times.Once);
             SecondChannelMock.Verify(x => x.BasicPublish(expectedExchangeName, string.Empty, false, basicProperties, It.IsAny<ReadOnlyMemory<byte>>()), Times.Once);

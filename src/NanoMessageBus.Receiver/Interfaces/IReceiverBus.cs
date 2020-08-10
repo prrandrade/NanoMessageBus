@@ -2,6 +2,9 @@
 {
     public interface IReceiverBus
     {
+        /// <summary>
+        /// Start consuming messages
+        /// </summary>
         void StartConsumer();
     }
 }

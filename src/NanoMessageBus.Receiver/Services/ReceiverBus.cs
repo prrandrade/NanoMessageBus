@@ -32,9 +32,6 @@ namespace NanoMessageBus.Receiver.Services
         public List<string> ListenedServices { get; }
         public List<uint> ListenedShards { get; }
 
-        // private fields - configuration
-        private readonly bool _autoAck;
-
         // private fields - rabbitmq
         private IConnectionFactory ConnectionFactory { get; }
 
@@ -60,8 +57,6 @@ namespace NanoMessageBus.Receiver.Services
 
                 ListenedServices = BusDetails.GetListenedServicesFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedServicesProperty, variableName: BrokerListenedServicesProperty, fallbackValue: string.Format(BrokerListenedServicesFallbackValue, identification)));
                 ListenedShards = BusDetails.GetListenedShardsFromPropertyValue(propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerListenedShardsProperty, variableName: BrokerListenedShardsProperty, fallbackValue: string.Format(BrokerListenedShardsFallbackValue, maxShardingSize - 1)), (uint)maxShardingSize);
-                //_autoAck = propertyRetriever.CheckFromCommandLine(BrokerAutoAckProperty);
-                _autoAck = true;
 
                 Logger.LogDebug($"Receiving with MaxShardingSize: {maxShardingSize}");
                 Logger.LogDebug($"Listening Services {string.Join(',', ListenedServices)}");
@@ -141,34 +136,29 @@ namespace NanoMessageBus.Receiver.Services
             }
         }
 
+        /// <summary>
+        /// Start consuming messages
+        /// </summary>
         public void StartConsumer()
         {
             foreach (var queue in Queues)
             {
-                Channels[queue].BasicConsume(queue, _autoAck, Consumers[queue]);
+                Channels[queue].BasicConsume(queue, true, Consumers[queue]);
                 Logger.LogDebug($"Consuming RabbitMQ queue {queue}.");
             }
         }
 
         internal async Task ConsumeMessageAsync(IModel channel, BasicDeliverEventArgs ea)
         {
-            try
-            {
-                var prepareToSendAt = (long)ea.BasicProperties.Headers["prepareToSendAt"];
-                var sentAt = (long)ea.BasicProperties.Headers["sentAt"];
-                var receivedAt = DateTimeUtils.UtcNow().ToBinary();
+            var prepareToSendAt = (long)ea.BasicProperties.Headers["prepareToSendAt"];
+            var sentAt = (long)ea.BasicProperties.Headers["sentAt"];
+            var receivedAt = DateTimeUtils.UtcNow().ToBinary();
 
-                var (receivedConvertedMessage, receivedMessageType) = await ProcessDeliveredMessageAsync(ea);
-                if (receivedConvertedMessage == null) return;
+            var (receivedConvertedMessage, receivedMessageType) = await ProcessDeliveredMessageAsync(ea);
+            if (receivedConvertedMessage == null) return;
 
-                var handlerType = MessageTypes[receivedMessageType];
-                await ProcessReceivedMessageAsync(prepareToSendAt, sentAt, receivedAt, receivedConvertedMessage, handlerType);
-            }
-            finally
-            {
-                if (!_autoAck)
-                    channel.BasicAck(ea.DeliveryTag, false);
-            }
+            var handlerType = MessageTypes[receivedMessageType];
+            await ProcessReceivedMessageAsync(prepareToSendAt, sentAt, receivedAt, receivedConvertedMessage, handlerType);
         }
 
         private async Task<(IMessage, Type)> ProcessDeliveredMessageAsync(BasicDeliverEventArgs ea)
