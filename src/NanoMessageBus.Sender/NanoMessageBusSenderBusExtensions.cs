@@ -2,6 +2,7 @@
 {
     using Abstractions.Interfaces;
     using Abstractions.Services;
+    using Compressor.Json;
     using DateTimeUtils;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,7 @@
             @this.AddPropertyRetriever();
             @this.AddDateTimeUtils();
             @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
+            @this.TryAddSingleton<ICompressor, JsonCompressor>();
             @this.TryAddScoped(typeof(ILoggerFacade<>), typeof(LoggerFacade<>));
             @this.TryAddSingleton<IRabbitMqConnectionFactoryManager, RabbitMqConnectionFactoryManager>();
             @this.TryAddSingleton<ISenderBus, SenderBus>();

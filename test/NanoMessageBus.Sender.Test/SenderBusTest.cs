@@ -21,6 +21,7 @@ namespace NanoMessageBus.Sender.Test
         private Mock<IRabbitMqConnectionFactoryManager> ConnectionFactoryManagerMock { get; }
         private Mock<IDateTimeUtils> DateTimeUtilsMock { get; }
         private Mock<IPropertyRetriever> PropertyRetrieverMock { get; }
+        private Mock<ICompressor> CompressorMock { get; }
 
         private Mock<IConnectionFactory> ConnectionFactoryMock { get; }
         private Mock<IConnection> ConnectionMock { get; }
@@ -33,6 +34,7 @@ namespace NanoMessageBus.Sender.Test
             ConnectionFactoryManagerMock = new Mock<IRabbitMqConnectionFactoryManager>();
             DateTimeUtilsMock = new Mock<IDateTimeUtils>();
             PropertyRetrieverMock = new Mock<IPropertyRetriever>();
+            CompressorMock = new Mock<ICompressor>();
 
             ConnectionFactoryMock = new Mock<IConnectionFactory>();
             ConnectionMock = new Mock<IConnection>();
@@ -97,7 +99,7 @@ namespace NanoMessageBus.Sender.Test
             #endregion
 
             // act
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
 
             // assert
             if (maxShardingSize < 0)
@@ -133,7 +135,7 @@ namespace NanoMessageBus.Sender.Test
                 .Throws(ex);
 
             // act
-            var result = Record.Exception(() => new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object));
+            var result = Record.Exception(() => new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object));
 
             // assert
             Assert.IsType<InvalidOperationException>(result);
@@ -216,7 +218,7 @@ namespace NanoMessageBus.Sender.Test
 
             #endregion
 
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
             var message = new DummyIntMessage { Id = 0 };
             var expectedExchangeName = $"exchange.{identification}.0";
 
@@ -314,7 +316,7 @@ namespace NanoMessageBus.Sender.Test
 
             #endregion
 
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
             var message = new DummyIntMessage { Id = 0 };
             var expectedExchangeName = $"exchange.{identification}.0";
 
@@ -407,7 +409,7 @@ namespace NanoMessageBus.Sender.Test
 
             #endregion
 
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
             var message = new DummyIntMessage { Id = 5 };
             var expectedExchangeName = $"exchange.{identification}.0";
             static int CustomShardResolver(object o, int i) => 0;
@@ -496,7 +498,7 @@ namespace NanoMessageBus.Sender.Test
 
             #endregion
 
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
             var message = new DummyIntMessage { Id = 0 };
 
             // act

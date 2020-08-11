@@ -5,7 +5,6 @@ namespace NanoMessageBus.Receiver.Services
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Threading.Tasks;
     using Abstractions.Interfaces;
     using DateTimeUtils.Interfaces;
@@ -22,6 +21,7 @@ namespace NanoMessageBus.Receiver.Services
         // injected dependencies
         public ILoggerFacade<ReceiverBus> Logger { get; }
         public IDateTimeUtils DateTimeUtils { get; }
+        public ICompressor Compressor { get; }
         public IServiceScopeFactory ServiceScopeFactory { get; }
 
         // properties to control consumers and queues for this consumer
@@ -36,7 +36,8 @@ namespace NanoMessageBus.Receiver.Services
         private IConnectionFactory ConnectionFactory { get; }
 
         public ReceiverBus(ILoggerFacade<ReceiverBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager,
-            IRabbitMqEventingBasicConsumerManager basicConsumerManager, IServiceScopeFactory serviceScopeFactory, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils,
+            IRabbitMqEventingBasicConsumerManager basicConsumerManager, IServiceScopeFactory serviceScopeFactory, 
+            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, ICompressor compressor,
             IEnumerable<IMessageHandler> handlers)
         {
             try
@@ -44,6 +45,7 @@ namespace NanoMessageBus.Receiver.Services
                 Logger = logger;
                 DateTimeUtils = dateTimeUtils;
                 ServiceScopeFactory = serviceScopeFactory;
+                Compressor = compressor;
 
                 #region Getting Properties from command line or environment
 
@@ -176,7 +178,7 @@ namespace NanoMessageBus.Receiver.Services
                 return (null, null);
             }
 
-            var receivedMessage = await System.Text.Json.JsonSerializer.DeserializeAsync(new MemoryStream(ea.Body.ToArray()), receivedMessageType);
+            var receivedMessage = await Compressor.DecompressMessageAsync(ea.Body.ToArray(), receivedMessageType);
             var receivedConvertedMessage = (IMessage)receivedMessage;
 
             return (receivedConvertedMessage, receivedMessageType);

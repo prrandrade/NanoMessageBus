@@ -33,6 +33,7 @@
 
         private Mock<IDateTimeUtils> DateTimeUtilsMock { get; }
         private Mock<IPropertyRetriever> PropertyRetrieverMock { get; }
+        private Mock<ICompressor> CompressorMock { get; }
 
         private Mock<IConnectionFactory> ConnectionFactoryMock { get; }
         private Mock<IConnection> ConnectionMock { get; }
@@ -49,6 +50,7 @@
             ServiceScopeFactoryMock = new Mock<IServiceScopeFactory>();
             ServiceScopeMock = new Mock<IServiceScope>();
             ServiceProviderMock = new Mock<IServiceProvider>();
+            CompressorMock = new Mock<ICompressor>();
 
             DateTimeUtilsMock = new Mock<IDateTimeUtils>();
             PropertyRetrieverMock = new Mock<IPropertyRetriever>();
@@ -68,7 +70,7 @@
             PrepareForReceiverBus(identification, maxShardingSize, listenedShards, prefetch, autoAck);
 
             // act
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object, Handlers);
 
             // assert
             if (maxShardingSize <= 0)
@@ -109,7 +111,7 @@
                 .Throws(ex);
 
             // act
-            var result = Record.Exception(() => new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Handlers));
+            var result = Record.Exception(() => new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object, Handlers));
 
             // assert
             Assert.IsType<InvalidOperationException>(result);
@@ -127,7 +129,7 @@
         {
             // arrange
             PrepareForReceiverBus(identification, maxShardingSize, listenedShards, prefetch, autoAck);
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object, Handlers);
 
             // act
             receiverBus.StartConsumer();
@@ -160,7 +162,7 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object, Handlers);
 
             var message = new DummyIntMessage();
             var stream = new MemoryStream();
@@ -212,7 +214,7 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object, Handlers);
 
             var message = new DummyGuidMessage();
             var stream = new MemoryStream();
@@ -264,7 +266,7 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object, Handlers);
 
             var message = new DummyGuidMessage();
             var stream = new MemoryStream();
@@ -312,7 +314,7 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object, Handlers);
 
             var message = new DummyGuidMessage();
             var stream = new MemoryStream();
@@ -364,7 +366,7 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object, Handlers);
 
             var message = new DummyIntMessage { Id = 0 };
             var stream = new MemoryStream();

@@ -4,6 +4,8 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Compressor.JsonCompressed;
+    using Compressor.Protobuf;
     using DateTimeUtils;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
@@ -14,16 +16,18 @@
 
     public class Program
     {
-        private static void Main()
+        private static async Task Main()
         {
             var services = new ServiceCollection();
 
             // dependency injection
             services.AddPropertyRetriever();
             services.AddDateTimeUtils();
+            services.AddLogging(c => c.ClearProviders());
+            //services.AddNanoMessageBusProtobufCompressor();
+            services.AddNanoMessageBusJsonCompressedCompressor();
             services.AddSenderBus();
             services.AddReceiverBus();
-            services.AddLogging(c => c.ClearProviders());
             services.AddSingleton<Repository.Repository>();
 
             // creating service provider container with all dependency injections
@@ -76,7 +80,7 @@
             });
 
             Console.ReadKey(true);
-            container.GetService<Repository.Repository>().ExportTimeToCsv().Wait();
+            await container.GetService<Repository.Repository>().ExportTimeToCsv();
         }
     }
 }

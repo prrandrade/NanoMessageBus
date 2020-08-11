@@ -5,10 +5,8 @@ namespace NanoMessageBus.Sender.Services
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
-    using System.Text.Json;
     using System.Threading.Tasks;
     using Abstractions.Attributes;
     using Abstractions.Enums;
@@ -25,6 +23,7 @@ namespace NanoMessageBus.Sender.Services
         // injected dependencies
         public ILoggerFacade<SenderBus> Logger { get; }
         public IDateTimeUtils DateTimeUtils { get; }
+        public ICompressor Compressor { get; set; }
 
         // private fields - configuration
         public int MaxShardingSize { get; }
@@ -33,12 +32,14 @@ namespace NanoMessageBus.Sender.Services
         // private fields - rabbitmq
         public IConnection Connection { get; }
 
-        public SenderBus(ILoggerFacade<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager, IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils)
+        public SenderBus(ILoggerFacade<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager, 
+            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, ICompressor compressor)
         {
             try
             {
                 Logger = logger;
                 DateTimeUtils = dateTimeUtils;
+                Compressor = compressor;
 
                 #region Getting Properties from command line or environment
                 Identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerIdentificationProperty, variableName: BrokerIdentificationProperty, fallbackValue: BrokerIdentificationFallbackValue);
@@ -148,9 +149,7 @@ namespace NanoMessageBus.Sender.Services
                 var exchange = string.Format(BusDetails.GetExchangeName(Identification, (uint)shardResolverResult));
 
                 // sending the message
-                var stream = new MemoryStream();
-                await JsonSerializer.SerializeAsync(stream, message, message.GetType());
-                var byteContent = stream.ToArray();
+                var byteContent = await Compressor.CompressMessageAsync(message);
                 basicProperties.Headers.Add("sentAt", DateTimeUtils.UtcNow().ToBinary());
                 ch.BasicPublish(exchange, string.Empty, basicProperties, byteContent);
                 Logger.LogDebug($"Sending message {messageType.Name} to {exchange}");

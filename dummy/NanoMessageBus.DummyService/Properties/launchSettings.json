@@ -2,7 +2,7 @@
   "profiles": {
     "NanoMessageBus.DummyService": {
       "commandName": "Project",
-      "commandLineArgs": "--brokerHostname randrade.ddns.net --brokerUsername guest --brokerPassword guest --brokerListenedServices ExampleService --brokerVirtualHost / --brokerListenedShards 0-9 --brokerIdentification ExampleService --totalMessages 10000 --parallel 16"
+      "commandLineArgs": "--brokerHostname localhost --brokerUsername guest --brokerPassword guest --brokerListenedServices ExampleService --brokerVirtualHost / --brokerListenedShards 0-9 --brokerIdentification ExampleService --totalMessages 500000 --parallel 16"
     }
   }
 }
