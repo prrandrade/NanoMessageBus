@@ -168,6 +168,10 @@
             var stream = new MemoryStream();
             await JsonSerializer.SerializeAsync(stream, message, message.GetType());
             var byteContent = stream.ToArray();
+            CompressorMock
+                .Setup(x => x.DecompressMessageAsync(It.IsAny<byte[]>(), It.IsAny<Type>()))
+                .ReturnsAsync(message);
+
             var ea = new BasicDeliverEventArgs
             {
                 Body = byteContent,
@@ -220,6 +224,10 @@
             var stream = new MemoryStream();
             await JsonSerializer.SerializeAsync(stream, message, message.GetType());
             var byteContent = stream.ToArray();
+            CompressorMock
+                .Setup(x => x.DecompressMessageAsync(It.IsAny<byte[]>(), It.IsAny<Type>()))
+                .ReturnsAsync(message);
+
             var ea = new BasicDeliverEventArgs
             {
                 Body = byteContent,
@@ -372,6 +380,10 @@
             var stream = new MemoryStream();
             await JsonSerializer.SerializeAsync(stream, message, message.GetType());
             var byteContent = stream.ToArray();
+            CompressorMock
+                .Setup(x => x.DecompressMessageAsync(It.IsAny<byte[]>(), It.IsAny<Type>()))
+                .ReturnsAsync(message);
+
             var ea = new BasicDeliverEventArgs
             {
                 Body = byteContent,

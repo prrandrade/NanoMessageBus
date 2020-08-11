@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\NanoMessageBus.Compressor.JsonCompressed\NanoMessageBus.Compressor.JsonCompressed.csproj" />
+    <ProjectReference Include="..\..\src\NanoMessageBus.Compressor.JsonCompressed\NanoMessageBus.Compressor.DeflateJson.csproj" />
     <ProjectReference Include="..\..\src\NanoMessageBus.Compressor.Protobuf\NanoMessageBus.Compressor.Protobuf.csproj" />
     <ProjectReference Include="..\..\src\NanoMessageBus.Receiver\NanoMessageBus.Receiver.csproj" />
     <ProjectReference Include="..\..\src\NanoMessageBus.Sender\NanoMessageBus.Sender.csproj" />

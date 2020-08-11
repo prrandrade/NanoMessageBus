@@ -222,6 +222,11 @@ namespace NanoMessageBus.Sender.Test
             var message = new DummyIntMessage { Id = 0 };
             var expectedExchangeName = $"exchange.{identification}.0";
 
+            var byteArray = Array.Empty<byte>();
+            CompressorMock
+                .Setup(x => x.CompressMessageAsync(It.IsAny<IMessage>()))
+                .ReturnsAsync(byteArray);
+
             // act
             await senderBus.SendAsync(message);
 
@@ -234,7 +239,7 @@ namespace NanoMessageBus.Sender.Test
             Assert.Equal(0, basicProperties.Priority);
 
             SecondChannelMock.Verify(x => x.CreateBasicProperties(), Times.Once);
-            SecondChannelMock.Verify(x => x.BasicPublish(expectedExchangeName, string.Empty, false, basicProperties, It.IsAny<ReadOnlyMemory<byte>>()), Times.Once);
+            SecondChannelMock.Verify(x => x.BasicPublish(expectedExchangeName, string.Empty, false, basicProperties, byteArray), Times.Once);
             SecondChannelMock.Verify(x => x.Close(), Times.Once);
             SecondChannelMock.Verify(x => x.Dispose(), Times.Once);
         }
@@ -320,6 +325,11 @@ namespace NanoMessageBus.Sender.Test
             var message = new DummyIntMessage { Id = 0 };
             var expectedExchangeName = $"exchange.{identification}.0";
 
+            var byteArray = Array.Empty<byte>();
+            CompressorMock
+                .Setup(x => x.CompressMessageAsync(It.IsAny<IMessage>()))
+                .ReturnsAsync(byteArray);
+
             // act
             await senderBus.SendAsync(message, priority);
 
@@ -332,7 +342,7 @@ namespace NanoMessageBus.Sender.Test
             Assert.Equal(expectedPriority, basicProperties.Priority);
 
             SecondChannelMock.Verify(x => x.CreateBasicProperties(), Times.Once);
-            SecondChannelMock.Verify(x => x.BasicPublish(expectedExchangeName, string.Empty, false, basicProperties, It.IsAny<ReadOnlyMemory<byte>>()), Times.Once);
+            SecondChannelMock.Verify(x => x.BasicPublish(expectedExchangeName, string.Empty, false, basicProperties, byteArray), Times.Once);
             SecondChannelMock.Verify(x => x.Close(), Times.Once);
             SecondChannelMock.Verify(x => x.Dispose(), Times.Once);
         }
@@ -414,6 +424,11 @@ namespace NanoMessageBus.Sender.Test
             var expectedExchangeName = $"exchange.{identification}.0";
             static int CustomShardResolver(object o, int i) => 0;
 
+            var byteArray = Array.Empty<byte>();
+            CompressorMock
+                .Setup(x => x.CompressMessageAsync(It.IsAny<IMessage>()))
+                .ReturnsAsync(byteArray);
+
             // act
             await senderBus.SendAsync(message, CustomShardResolver);
 
@@ -426,7 +441,7 @@ namespace NanoMessageBus.Sender.Test
             Assert.Equal(0, basicProperties.Priority);
 
             SecondChannelMock.Verify(x => x.CreateBasicProperties(), Times.Once);
-            SecondChannelMock.Verify(x => x.BasicPublish(expectedExchangeName, string.Empty, false, basicProperties, It.IsAny<ReadOnlyMemory<byte>>()), Times.Once);
+            SecondChannelMock.Verify(x => x.BasicPublish(expectedExchangeName, string.Empty, false, basicProperties, byteArray), Times.Once);
             SecondChannelMock.Verify(x => x.Close(), Times.Once);
             SecondChannelMock.Verify(x => x.Dispose(), Times.Once);
         }

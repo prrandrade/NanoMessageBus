@@ -1,4 +1,4 @@
-﻿namespace NanoMessageBus.Compressor.JsonCompressed
+﻿namespace NanoMessageBus.Compressor.DeflateJson
 {
     using System;
     using System.IO;
@@ -8,7 +8,7 @@
     using System.Threading.Tasks;
     using Abstractions.Interfaces;
 
-    public class JsonCompressedCompressor : ICompressor
+    public class DeflateJsonCompressor : ICompressor
     {
         public async Task<byte[]> CompressMessageAsync(IMessage message)
         {

@@ -17,8 +17,8 @@
         {
             @this.AddPropertyRetriever();
             @this.AddDateTimeUtils();
+            @this.AddNanoMessageBusJsonCompressor();
             @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
-            @this.TryAddSingleton<ICompressor, JsonCompressor>();
             @this.TryAddScoped(typeof(ILoggerFacade<>), typeof(LoggerFacade<>));
             @this.TryAddSingleton<IRabbitMqConnectionFactoryManager, RabbitMqConnectionFactoryManager>();
             @this.TryAddSingleton<ISenderBus, SenderBus>();

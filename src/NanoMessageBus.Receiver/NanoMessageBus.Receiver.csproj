@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NanoMessageBus.Abstractions\NanoMessageBus.Abstractions.csproj" />
+    <ProjectReference Include="..\NanoMessageBus.Compressor.Json\NanoMessageBus.Compressor.Json.csproj" />
     <ProjectReference Include="..\NanoMessageBus.Extensions\NanoMessageBus.Extensions.csproj" />
   </ItemGroup>
 

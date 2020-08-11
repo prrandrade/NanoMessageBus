@@ -4,6 +4,7 @@
     using System.Linq;
     using Abstractions.Interfaces;
     using Abstractions.Services;
+    using Compressor.Json;
     using DateTimeUtils;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,7 @@
         {
             @this.AddPropertyRetriever();
             @this.AddDateTimeUtils();
+            @this.AddNanoMessageBusJsonCompressor();
             @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
             @this.TryAddScoped(typeof(ILoggerFacade<>), typeof(LoggerFacade<>));
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
