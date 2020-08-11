@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
-    <PackageId>NanoMessageBus.Receiver</PackageId>
+    <PackageId>NanoMessageBus.Compressor.DeflateJson</PackageId>
     <PackageDescription>Injectable dependency for compressiong RabbitMQ Messages using an DeflateStream. Best used with NanoMessageBus.Sender and NanoMessageBus.Receiver package.</PackageDescription>
     <Authors><![CDATA[Paulo Roberto Ramos de Andrade]]></Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
