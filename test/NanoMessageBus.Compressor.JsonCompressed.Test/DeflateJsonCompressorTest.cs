@@ -20,6 +20,16 @@ namespace NanoMessageBus.Compressor.DeflateJson.Test
     public class DeflateJsonCompressorTest
     {
         [Fact]
+        public void Identification()
+        {
+            // act
+            var compressor = new DeflateJsonCompressor();
+
+            // assert
+            Assert.Equal("Deflate Json", compressor.Identification);  
+        }
+
+        [Fact]
         public async Task CompressMessageAsync()
         {
             // arrange

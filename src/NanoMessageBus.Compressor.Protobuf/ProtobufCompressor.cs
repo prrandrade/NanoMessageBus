@@ -8,6 +8,8 @@
 
     public class ProtobufCompressor : ICompressor
     {
+        public string Identification => "Protobuf";
+
         public async Task<byte[]> CompressMessageAsync(IMessage message)
         {
             await Task.CompletedTask;

@@ -10,6 +10,8 @@
 
     public class DeflateJsonCompressor : ICompressor
     {
+        public string Identification => "Deflate Json";
+
         public async Task<byte[]> CompressMessageAsync(IMessage message)
         {
             var stream = new MemoryStream();

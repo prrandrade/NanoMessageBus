@@ -18,6 +18,16 @@ namespace NanoMessageBus.Compressor.Json.Test
     public class JsonCompressorTest
     {
         [Fact]
+        public void Identification()
+        {
+            // act
+            var compressor = new JsonCompressor();
+
+            // assert
+            Assert.Equal("Json", compressor.Identification);  
+        }
+
+        [Fact]
         public async Task CompressMessageAsync()
         {
             // arrange

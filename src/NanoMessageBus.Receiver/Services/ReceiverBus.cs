@@ -145,7 +145,7 @@ namespace NanoMessageBus.Receiver.Services
         {
             foreach (var queue in Queues)
             {
-                Channels[queue].BasicConsume(queue, true, Consumers[queue]);
+                _ = Channels[queue].BasicConsume(queue, true, Consumers[queue]);
                 Logger.LogDebug($"Consuming RabbitMQ queue {queue}.");
             }
         }

@@ -8,6 +8,8 @@
 
     public class JsonCompressor : ICompressor
     {
+        public string Identification => "Json";
+
         public async Task<byte[]> CompressMessageAsync(IMessage message)
         {
             var stream = new MemoryStream();

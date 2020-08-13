@@ -22,6 +22,16 @@ namespace NanoMessageBus.Compressor.Protobuf.Test
     public class ProtobufCompressorTest
     {
         [Fact]
+        public void Identification()
+        {
+            // act
+            var compressor = new ProtobufCompressor();
+
+            // assert
+            Assert.Equal("Protobuf", compressor.Identification);  
+        }
+
+        [Fact]
         public async Task CompressMessageAsync()
         {
             // arrange

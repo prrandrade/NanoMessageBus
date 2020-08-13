@@ -1,4 +1,4 @@
-﻿namespace NanoMessageBus.DummyService.Messages
+﻿namespace NanoMessageBus.BenchmarkService.Messages
 {
     using System;
     using Abstractions.Attributes;
@@ -6,7 +6,7 @@
     using ProtoBuf;
 
     [ProtoContract]
-    public class SmallMessage : IMessage
+    public class Message : IMessage
     {
         [MessageId]
         [ProtoMember(1)]
@@ -71,5 +71,8 @@
 
         [ProtoMember(21)]
         public string MessageContent20 { get; set; }
+
+        [ProtoMember(22)]
+        public bool PersistMessage { get; set; }
     }
 }
