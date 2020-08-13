@@ -22,8 +22,6 @@
         private static async Task Main()
         {
             int totalMessages;
-            int preMessages;
-
             var services = new ServiceCollection();
 
             // dependency injection
@@ -54,7 +52,7 @@
             }
             services.AddSenderBus();
             services.AddReceiverBus();
-            preMessages = totalMessages / 200;
+            var preMessages = totalMessages / 200;
             var countdown = new CountdownEvent(totalMessages);
             services.AddSingleton(countdown);
             services.AddSingleton<IBenchmarkRepository, BenchmarkRepository>();
@@ -71,7 +69,7 @@
             var senderBus = container.GetSenderBus();
 
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Sending some messages to load everything...");
-            for (var i = 0; i < preMessages; i++)
+            Parallel.For(0, preMessages, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async i =>
             {
                 await senderBus.SendAsync(new Message
                 {
@@ -99,7 +97,7 @@
                     PersistMessage = false
                 });
                 Thread.Sleep(1);
-            }
+            });
 
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Sending messages...");
             Parallel.For(0, totalMessages, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async i =>
@@ -133,7 +131,7 @@
             });
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Every message was sent!");
             countdown.Wait();
-            
+
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Exporting results...");
             await container.GetService<IBenchmarkRepository>().ExportDataAsync();
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Done!");

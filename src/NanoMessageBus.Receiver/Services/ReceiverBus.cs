@@ -160,7 +160,7 @@ namespace NanoMessageBus.Receiver.Services
             if (receivedConvertedMessage == null) return;
 
             var handlerType = MessageTypes[receivedMessageType];
-            await ProcessReceivedMessageAsync(prepareToSendAt, sentAt, receivedAt, receivedConvertedMessage, handlerType);
+            await ProcessReceivedMessageAsync(receivedConvertedMessage, handlerType, ea.Body.Length, prepareToSendAt, sentAt, receivedAt);
         }
 
         private async Task<(IMessage, Type)> ProcessDeliveredMessageAsync(BasicDeliverEventArgs ea)
@@ -184,7 +184,7 @@ namespace NanoMessageBus.Receiver.Services
             return (receivedConvertedMessage, receivedMessageType);
         }
 
-        private async Task ProcessReceivedMessageAsync(long prepareToSendAt, long sentAt, long receivedAt, IMessage receivedConvertedMessage, Type handlerType)
+        private async Task ProcessReceivedMessageAsync(IMessage receivedConvertedMessage, Type handlerType, int messageSize, long prepareToSendAt, long sentAt, long receivedAt)
         {
             using var scope = ServiceScopeFactory.CreateScope();
             var handler = scope.ServiceProvider.GetService(handlerType);
@@ -193,7 +193,7 @@ namespace NanoMessageBus.Receiver.Services
             var handle = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.HandleAsync));
             var afterHandle = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.AfterHandleAsync));
 
-            var statisticsArguments = new object[] { DateTime.FromBinary(prepareToSendAt), DateTime.FromBinary(sentAt), DateTime.FromBinary(receivedAt), DateTimeUtils.UtcNow() };
+            var statisticsArguments = new object[] {receivedConvertedMessage, messageSize, DateTime.FromBinary(prepareToSendAt), DateTime.FromBinary(sentAt), DateTime.FromBinary(receivedAt), DateTimeUtils.UtcNow() };
             var arguments = new object[] { receivedConvertedMessage };
 
             // ReSharper disable PossibleNullReferenceException

@@ -1,10 +1,11 @@
 ﻿namespace NanoMessageBus.BenchmarkService.Interfaces
 {
+    using System;
     using System.Threading.Tasks;
 
     public interface IBenchmarkRepository
     {
-        void SaveInfo(long prepareToSendAt, long sentAt, long receivedAt, long handledAt);
+        void SaveInfo(Guid messageId, int messageSize, long prepareToSendAt, long sentAt, long receivedAt, long handledAt);
 
         Task ExportDataAsync();
     }

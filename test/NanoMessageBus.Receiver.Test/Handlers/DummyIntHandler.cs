@@ -12,10 +12,10 @@
         public bool HandleAsyncPassed { get; private set; }
         public bool AfterHandleAsyncPassed { get; private set; }
 
-        public override async Task RegisterStatisticsAsync(DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt)
+        public override async Task RegisterStatisticsAsync(DummyIntMessage message, int messageSize, DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt)
         {
             RegisterStatisticsAsyncPassed = true;
-            await base.RegisterStatisticsAsync(prepareToSendAt, sentAt, receivedAt, handledAt);
+            await base.RegisterStatisticsAsync(message, messageSize, prepareToSendAt, sentAt, receivedAt, handledAt);
         }
 
         public override async Task<bool> BeforeHandleAsync(DummyIntMessage message)

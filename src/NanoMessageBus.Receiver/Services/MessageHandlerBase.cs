@@ -7,7 +7,7 @@
 
     public abstract class MessageHandlerBase<TMessage> : IMessageHandler<TMessage> where TMessage : IMessage
     {
-        public virtual Task RegisterStatisticsAsync(DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt)
+        public virtual Task RegisterStatisticsAsync(TMessage message, int messageSize, DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt)
         {
             return Task.CompletedTask;
         }

@@ -8,6 +8,8 @@
 
         public Guid MessageId { get; set; }
 
+        public int MessageSize { get; set; }
+
         public long PrepareToSendAt { get; set; }
 
         public long SentAt { get; set; }

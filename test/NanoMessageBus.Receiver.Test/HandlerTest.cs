@@ -16,7 +16,7 @@
             var handler = new DummyGuidHandler();
 
             // act
-            await handler.RegisterStatisticsAsync(DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow);
+            await handler.RegisterStatisticsAsync(message, 1, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow);
             await handler.BeforeHandleAsync(message);
             await handler.HandleAsync(message);
             await handler.AfterHandleAsync(message);
@@ -36,7 +36,7 @@
             var handler = new DummyIntHandler();
 
             // act
-            await handler.RegisterStatisticsAsync(DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow);
+            await handler.RegisterStatisticsAsync(message, 1, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow);
             await handler.BeforeHandleAsync(message);
             await handler.HandleAsync(message);
             await handler.AfterHandleAsync(message);
