@@ -21,7 +21,7 @@
     {
         private static async Task Main()
         {
-            int totalMessages, warmupMessages;
+            int totalMessages, warmupMessages, parallel;
             string compress;
             var services = new ServiceCollection();
 
@@ -31,6 +31,10 @@
             services.AddLogging(c => c.ClearProviders());
             await using (var tempContainer = services.BuildServiceProvider())
             {
+                parallel = tempContainer
+                    .GetService<IPropertyRetriever>()
+                    .RetrieveFromCommandLine("parallel", Environment.ProcessorCount).ToList()[0];
+
                 totalMessages = tempContainer
                     .GetService<IPropertyRetriever>()
                     .RetrieveFromCommandLine("totalMessages", 1000000).ToList()[0];
@@ -77,7 +81,7 @@
             var senderBus = container.GetSenderBus();
 
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Sending some messages to load everything...");
-            Parallel.For(0, warmupMessages, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async i =>
+            Parallel.For(0, warmupMessages, new ParallelOptions { MaxDegreeOfParallelism = parallel }, async i =>
             {
                 await senderBus.SendAsync(new Message
                 {
@@ -108,7 +112,7 @@
             });
 
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Sending messages...");
-            Parallel.For(0, totalMessages, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async i =>
+            Parallel.For(0, totalMessages, new ParallelOptions { MaxDegreeOfParallelism = parallel }, async i =>
             {
                 await senderBus.SendAsync(new Message
                 {

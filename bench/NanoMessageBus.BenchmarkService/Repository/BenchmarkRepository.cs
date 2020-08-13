@@ -45,7 +45,7 @@
                 .GroupBy(x => DateTime.FromBinary(x.SentAt).ToString("HH:mm:ss"), (s, models) => new KeyValuePair<string, int>(s, models.Count()))
                 .ToList();
 
-            await using var sw = new StreamWriter("benchmark.txt", false) { AutoFlush = true };
+            await using var sw = new StreamWriter($"benchmark_{compressEngine}.txt", false) { AutoFlush = true };
             await sw.WriteLineAsync($"Benchmark result for {totalMessages} messages, compressed with {compressEngine}.");
             await sw.WriteLineAsync($"Average message size: {infos.Select(x => x.MessageSize).Average()} bytes");
             await sw.WriteLineAsync("");
@@ -78,6 +78,8 @@
             await sw.WriteLineAsync(FormattableString.CurrentCulture($"{"100",-10}\t{GetNthPercentile(totalTimes, 100)}"));
             await sw.WriteLineAsync("");
 
+            await sw.WriteLineAsync($"Average messages/second: {((double)numbers.Select(x => x.Value).Sum()/numbers.Count):##.##}");
+            await sw.WriteLineAsync("");
             await sw.WriteLineAsync("Number of messages per second:");
             await sw.WriteLineAsync("");
             await sw.WriteLineAsync($"{"Time", -10}\tMessages/seg");

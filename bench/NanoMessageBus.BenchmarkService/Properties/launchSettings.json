@@ -2,7 +2,7 @@
   "profiles": {
     "NanoMessageBus.DummyService": {
       "commandName": "Project",
-      "commandLineArgs": "--brokerHostname localhost --brokerUsername guest --brokerPassword guest --brokerListenedServices ExampleService --brokerVirtualHost / --brokerListenedShards 0-9 --brokerIdentification ExampleService --totalMessages 500000 --warmupMessages 10000 --compress protobuf"
+      "commandLineArgs": "--brokerHostname localhost --brokerUsername guest --brokerPassword guest --brokerListenedServices ExampleService --brokerVirtualHost / --brokerListenedShards 0-9 --brokerIdentification ExampleService --totalMessages 500000 --warmupMessages 10000 --compress deflate --parallel 16"
     }
   }
 }
