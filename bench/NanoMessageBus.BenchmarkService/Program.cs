@@ -21,7 +21,8 @@
     {
         private static async Task Main()
         {
-            int totalMessages;
+            int totalMessages, warmupMessages;
+            string compress;
             var services = new ServiceCollection();
 
             // dependency injection
@@ -34,7 +35,11 @@
                     .GetService<IPropertyRetriever>()
                     .RetrieveFromCommandLine("totalMessages", 1000000).ToList()[0];
 
-                var compress = tempContainer.GetService<IPropertyRetriever>().RetrieveFromCommandLine("compress").ToList()[0];
+                warmupMessages = tempContainer
+                    .GetService<IPropertyRetriever>()
+                    .RetrieveFromCommandLine("warmupMessages", 500).ToList()[0];
+
+                compress = tempContainer.GetService<IPropertyRetriever>().RetrieveFromCommandLine("compress").ToList()[0];
                 switch (compress)
                 {
                     case "protobuf":
@@ -46,16 +51,19 @@
                         services.AddNanoMessageBusDeflateJsonCompressor();
                         break;
                     default:
+                        compress = "default";
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using default json compress engine");
                         break;
                 }
             }
             services.AddSenderBus();
             services.AddReceiverBus();
-            var preMessages = totalMessages / 200;
             var countdown = new CountdownEvent(totalMessages);
             services.AddSingleton(countdown);
             services.AddSingleton<IBenchmarkRepository, BenchmarkRepository>();
+
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {warmupMessages} messages will be sent to load everything.");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {totalMessages} messages will be sent and benchmarked.");
 
             // creating service provider container with all dependency injections
             var container = services.BuildServiceProvider();
@@ -69,7 +77,7 @@
             var senderBus = container.GetSenderBus();
 
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Sending some messages to load everything...");
-            Parallel.For(0, preMessages, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async i =>
+            Parallel.For(0, warmupMessages, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async i =>
             {
                 await senderBus.SendAsync(new Message
                 {
@@ -133,7 +141,7 @@
             countdown.Wait();
 
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Exporting results...");
-            await container.GetService<IBenchmarkRepository>().ExportDataAsync();
+            await container.GetService<IBenchmarkRepository>().ExportFilteredDataAsync(totalMessages, compress);
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Done!");
         }
     }
