@@ -64,7 +64,6 @@
             var countdown = new CountdownEvent(totalMessages);
             services.AddSingleton(countdown);
             services.AddSingleton<IBenchmarkRepository, BenchmarkRepository>();
-
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {warmupMessages} messages will be sent to load everything.");
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {totalMessages} messages will be sent and benchmarked.");
 
