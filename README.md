@@ -228,13 +228,13 @@ As you can see, more than **99%** of **500000 messages** were processed on less 
 
 
 
-# Other Serializers
+# Customized Serializers
 
 These benchmark numbers can be achived using the default JSON serializer used by NanoMessageBus.Sender and NanoMessageBus.Receiver. You can, however, use customized serializers for more network performance or more serialization performance. As today, we have three cutomized serializers:
 
-- NanoMessageBus.Serializers.DeflateJson, using a DeflateStream to compress the serialized Json.
-- NanoMessageBus.Serializers.Protobuf, using the Protobuf-net.Core package for serialization.
-- NanoMessageBus.Serializers.MessagePack, using the MessagePack package for serializarion.
+- NanoMessageBus.Serializers.DeflateJson, [using DeflateStream](https://docs.microsoft.com/pt-br/dotnet/api/system.io.compression.deflatestream?view=netcore-3.1) to compress the serialized Json.
+- NanoMessageBus.Serializers.Protobuf, [using Protobuf-net](https://github.com/protobuf-net/protobuf-net) for serialization.
+- NanoMessageBus.Serializers.MessagePack, [using MessagePack](https://github.com/neuecc/MessagePack-CSharp)  for serialization.
 
 The installation is simple, but **only one package must be used**:
 
