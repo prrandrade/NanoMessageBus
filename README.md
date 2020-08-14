@@ -4,16 +4,26 @@
 # Summary
 
 - [Introduction](#introduction)
+- [Nuget Packages](#nuget-packages)
 - [Packages Installation with .NET Core Dependency Injection Framework](#package-installation-with-.net-core-dependency-injection-framework)
 - [NanoMessageBus.Sender - How to send messages with RabbitMQ](#nanomessagebus.sender-how-to-send-messages-with-rabbitmq)
 - [NanoMessageBus.Receiver - Receiving messages with RabbitMQ](#nanomessagebus.receiver-receiving-messages-with-rabbitmq)
 - [Benchmark scenario](#benchmark-scenario)
 - [Customized Serializers](#customized-serializers)
-- [Nuget Packages](#nuget-packages)
 
 # Introduction
 
 The NanoMessageBus is built with two packages - **NanoMessaegBus.Sender** and **NanoMessageBus.Receiver** with a simple objective: abstract all the logic of a [RabbitMQ server](https://www.rabbitmq.com/) communication and send/receive asynchronous messages in an **easy** and **fast** way!
+
+
+
+# Nuget Packages
+
+- [NanoMessageBus.Sender](https://www.nuget.org/packages/NanoMessageBus.Sender/)
+- [NanoMessageBus.Receiver](https://www.nuget.org/packages/NanoMessageBus.Receiver/)
+- [NanoMessageBus.Serializers.DeflateJson](https://www.nuget.org/packages/NanoMessageBus.Serializers.DeflateJson/)
+- [NanoMessageBus.Serializers.Protobuf](https://www.nuget.org/packages/NanoMessageBus.Serializers.Protobuf/)
+- [NanoMessageBus.Serializers.MessagePack](https://www.nuget.org/packages/NanoMessageBus.Serializers.MessagePack/)
 
 
 
@@ -300,6 +310,4 @@ On average **493 messages** were sent **per second**, each message with **1140 b
 | 100 (worse case!) | 5951.829        |
 
 
-
-# Nuget Packages
 
