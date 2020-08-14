@@ -6,7 +6,7 @@
         public const string BrokerIdentificationFallbackValue = "NoIdentification";
 
         public const string BrokerMaxShardingSizeProperty = "brokerMaxShardingSize";
-        public const int BrokerMaxShardingSizeFallbackValue = 1;
+        public const int BrokerMaxShardingSizeFallbackValue = 10;
 
         public const string BrokerListenedServicesProperty = "brokerListenedServices";
         public const string BrokerListenedServicesFallbackValue = "{0}";

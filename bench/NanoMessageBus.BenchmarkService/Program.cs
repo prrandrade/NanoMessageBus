@@ -5,6 +5,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Compressor.DeflateJson;
+    using Compressor.MessagePack;
     using Compressor.Protobuf;
     using DateTimeUtils;
     using Interfaces;
@@ -51,6 +52,10 @@
                     case "deflate":
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using deflate json compress engine");
                         services.AddNanoMessageBusDeflateJsonCompressor();
+                        break;
+                    case "messagepack":
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using messagepack compress engine");
+                        services.AddNanoMessageBusMessagePackCompressor();
                         break;
                     default:
                         compress = "default";

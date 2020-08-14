@@ -3,9 +3,11 @@
     using System;
     using Abstractions.Attributes;
     using Abstractions.Interfaces;
+    using MessagePack;
     using ProtoBuf;
 
     [ProtoContract]
+    [MessagePackObject(true)]
     public class Message : IMessage
     {
         [MessageId]

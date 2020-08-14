@@ -92,7 +92,7 @@ namespace NanoMessageBus.Receiver.Test
             mockConnectionFactoryManager.Verify(x => x.GetConnectionFactory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
             mockConnectionFactory.Verify(x => x.CreateConnection(It.IsAny<IList<string>>()), Times.Once);
             mockConnection.Verify(x => x.CreateModel(), Times.AtLeastOnce);
-            mockChannel.Verify(x => x.BasicConsume(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<IBasicConsumer>()), Times.Once);
+            mockChannel.Verify(x => x.BasicConsume(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<IBasicConsumer>()), Times.Exactly(10));
         }
     }
 }

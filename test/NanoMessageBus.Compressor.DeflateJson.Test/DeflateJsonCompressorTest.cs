@@ -1,7 +1,9 @@
-namespace NanoMessageBus.Compressor.Json.Test
+namespace NanoMessageBus.Compressor.DeflateJson.Test
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.IO.Compression;
     using System.Text;
     using System.Text.Json;
     using System.Threading.Tasks;
@@ -30,16 +32,16 @@ namespace NanoMessageBus.Compressor.Json.Test
         public List<SubMessage> Property5 { get; set; }
     }
 
-    public class JsonCompressorTest
+    public class DeflateJsonCompressorTest
     {
         [Fact]
         public void Identification()
         {
             // act
-            var compressor = new JsonCompressor();
+            var compressor = new DeflateJsonCompressor();
 
             // assert
-            Assert.Equal("Json", compressor.Identification);
+            Assert.Equal("Deflate Json", compressor.Identification);
         }
 
         [Fact]
@@ -47,14 +49,20 @@ namespace NanoMessageBus.Compressor.Json.Test
         {
             // arrange
             var message = CreateMessage();
-            var compressor = new JsonCompressor();
-            var expectedCompressedMessage = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+            var compressor = new DeflateJsonCompressor();
+
+            var compressedMessage = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+            var output = new MemoryStream();
+            await using var dstream = new DeflateStream(output, CompressionLevel.Optimal);
+            dstream.Write(compressedMessage, 0, compressedMessage.Length);
+            dstream.Close();
+            var expectedResult = output.ToArray();
 
             // act
             var result = await compressor.CompressMessageAsync(message);
 
             // assert
-            Assert.Equal(expectedCompressedMessage, result);
+            Assert.Equal(expectedResult, result);
         }
 
         [Fact]
@@ -62,8 +70,13 @@ namespace NanoMessageBus.Compressor.Json.Test
         {
             // arrange
             var message = CreateMessage();
-            var compressor = new JsonCompressor();
-            var compressedMessage = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+            var compressor = new DeflateJsonCompressor();
+
+            var output = new MemoryStream();
+            await using var dstream = new DeflateStream(output, CompressionLevel.Optimal);
+            dstream.Write(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message)), 0, Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message)).Length);
+            dstream.Close();
+            var compressedMessage = output.ToArray();
 
             // act
             var result = await compressor.DecompressMessageAsync(compressedMessage, typeof(Message));

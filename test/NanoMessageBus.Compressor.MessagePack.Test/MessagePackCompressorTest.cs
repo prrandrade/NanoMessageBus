@@ -1,11 +1,12 @@
-namespace NanoMessageBus.Compressor.Json.Test
+namespace NanoMessageBus.Compressor.MessagePack.Test
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
-    using System.Text.Json;
+    using System.IO;
     using System.Threading.Tasks;
     using Abstractions.Interfaces;
+    using global::MessagePack;
+    using global::MessagePack.Resolvers;
     using Xunit;
 
     public class SubMessage
@@ -17,6 +18,7 @@ namespace NanoMessageBus.Compressor.Json.Test
         public string Property3 { get; set; }
     }
 
+    [MessagePackObject(true)]
     public class Message : IMessage
     {
         public int Property1 { get; set; }
@@ -30,16 +32,16 @@ namespace NanoMessageBus.Compressor.Json.Test
         public List<SubMessage> Property5 { get; set; }
     }
 
-    public class JsonCompressorTest
+    public class MessagePackCompressorTest
     {
         [Fact]
         public void Identification()
         {
             // act
-            var compressor = new JsonCompressor();
+            var compressor = new MessagePackCompressor();
 
             // assert
-            Assert.Equal("Json", compressor.Identification);
+            Assert.Equal("Message Pack", compressor.Identification);
         }
 
         [Fact]
@@ -47,14 +49,26 @@ namespace NanoMessageBus.Compressor.Json.Test
         {
             // arrange
             var message = CreateMessage();
-            var compressor = new JsonCompressor();
-            var expectedCompressedMessage = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+            var compressor = new MessagePackCompressor();
+
+            var stream = new MemoryStream();
+            await MessagePackSerializer.SerializeAsync(message.GetType(), stream, message, MessagePackSerializerOptions.Standard
+                .WithResolver(CompositeResolver.Create(
+                    NativeDateTimeResolver.Instance,
+                    NativeGuidResolver.Instance,
+                    NativeDecimalResolver.Instance,
+                    TypelessObjectResolver.Instance,
+                    ContractlessStandardResolver.Instance,
+                    StandardResolver.Instance,
+                    DynamicContractlessObjectResolver.Instance
+                )));
+            var expectedResult = stream.ToArray();
 
             // act
             var result = await compressor.CompressMessageAsync(message);
 
             // assert
-            Assert.Equal(expectedCompressedMessage, result);
+            Assert.Equal(expectedResult, result);
         }
 
         [Fact]
@@ -62,11 +76,22 @@ namespace NanoMessageBus.Compressor.Json.Test
         {
             // arrange
             var message = CreateMessage();
-            var compressor = new JsonCompressor();
-            var compressedMessage = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+            var compressor = new MessagePackCompressor();
+
+            var stream = new MemoryStream();
+            await MessagePackSerializer.SerializeAsync(message.GetType(), stream, message, MessagePackSerializerOptions.Standard
+                .WithResolver(CompositeResolver.Create(
+                    NativeDateTimeResolver.Instance,
+                    NativeGuidResolver.Instance,
+                    NativeDecimalResolver.Instance,
+                    TypelessObjectResolver.Instance,
+                    ContractlessStandardResolver.Instance,
+                    StandardResolver.Instance,
+                    DynamicContractlessObjectResolver.Instance
+                )));
 
             // act
-            var result = await compressor.DecompressMessageAsync(compressedMessage, typeof(Message));
+            var result = await compressor.DecompressMessageAsync(stream.ToArray(), typeof(Message));
 
             // assert
             Assert.True(CompareMessages((Message)result, message));
