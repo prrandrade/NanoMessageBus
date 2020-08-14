@@ -60,6 +60,7 @@
             }
             services.AddSenderBus();
             services.AddReceiverBus();
+
             var countdown = new CountdownEvent(totalMessages);
             services.AddSingleton(countdown);
             services.AddSingleton<IBenchmarkRepository, BenchmarkRepository>();
