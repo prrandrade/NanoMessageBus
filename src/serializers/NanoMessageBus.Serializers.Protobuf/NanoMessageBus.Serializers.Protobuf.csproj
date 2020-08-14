@@ -4,8 +4,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
-    <PackageId>NanoMessageBus.Compressor.Protobuf</PackageId>
-    <PackageDescription>Injectable dependency for compressing RabbitMQ Messages using Protobuffer. Best used with NanoMessageBus.Sender and NanoMessageBus.Receiver package.</PackageDescription>
+    <PackageId>NanoMessageBus.Serializers.Protobuf</PackageId>
+    <PackageDescription>Injectable dependency for serializing and deserializing RabbitMQ Messages using Protobuffer. Best used with NanoMessageBus.Sender and NanoMessageBus.Receiver package.</PackageDescription>
     <Authors><![CDATA[Paulo Roberto Ramos de Andrade]]></Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/prrandrade/NanoMessageBus</RepositoryUrl>
