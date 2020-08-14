@@ -7,8 +7,8 @@
 - [Packages Installation with .NET Core Dependency Injection Framework](#package-installation-with-.net-core-dependency-injection-framework)
 - [NanoMessageBus.Sender - How to send messages with RabbitMQ](#nanomessagebus.sender-how-to-send-messages-with-rabbitmq)
 - [NanoMessageBus.Receiver - Receiving messages with RabbitMQ](#nanomessagebus.receiver-receiving-messages-with-rabbitmq)
-
 - [Benchmark scenario](#benchmark-scenario)
+- [Customized Serializers](#customized-serializers)
 
 # Introduction
 
@@ -205,6 +205,7 @@ As an example, the _ReceiverService_ can be started like this (note that all oth
 ```
 
 
+
 # Benchmark scenario
 
 I've run a benchmark scenario using both of my machines as a client (with the service) and as a server (with a RabbitMQ Docker container). 500000 messages were sent in batches of 16 messages with 1 ms of interval. 
@@ -224,3 +225,8 @@ On average  **595 messages/second** were sent, and that's the results, in millis
 | 100 (worse case!) | 3293.314        |
 
 As you can see, more than **99%** of **500000 messages** were processed on less than **100 ms**, using a Wi-Fi network!
+
+
+
+# Other Serializers
+
