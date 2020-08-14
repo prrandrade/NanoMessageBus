@@ -2,13 +2,13 @@
 {
     using Abstractions.Interfaces;
     using Abstractions.Services;
-    using Compressor.Json;
     using DateTimeUtils;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
     using Microsoft.Extensions.Logging;
     using PropertyRetriever;
+    using Serializers.NativeJson;
     using Services;
 
     public static class NanoMessageBusSenderBusExtensions
@@ -17,7 +17,7 @@
         {
             @this.AddPropertyRetriever();
             @this.AddDateTimeUtils();
-            @this.AddNanoMessageBusJsonCompressor();
+            @this.AddNanoMessageBusNativeJsonSerializer();
             @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
             @this.TryAddScoped(typeof(ILoggerFacade<>), typeof(LoggerFacade<>));
             @this.TryAddSingleton<IRabbitMqConnectionFactoryManager, RabbitMqConnectionFactoryManager>();

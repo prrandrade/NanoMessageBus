@@ -15,11 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\NanoMessageBus.Compressor.DeflateJson\NanoMessageBus.Compressor.DeflateJson.csproj" />
-    <ProjectReference Include="..\..\src\NanoMessageBus.Compressor.MessagePack\NanoMessageBus.Compressor.MessagePack\NanoMessageBus.Compressor.MessagePack.csproj" />
-    <ProjectReference Include="..\..\src\NanoMessageBus.Compressor.Protobuf\NanoMessageBus.Compressor.Protobuf.csproj" />
     <ProjectReference Include="..\..\src\NanoMessageBus.Receiver\NanoMessageBus.Receiver.csproj" />
     <ProjectReference Include="..\..\src\NanoMessageBus.Sender\NanoMessageBus.Sender.csproj" />
+    <ProjectReference Include="..\..\src\serializers\NanoMessageBus.Serializers.DeflateJson\NanoMessageBus.Serializers.DeflateJson.csproj" />
+    <ProjectReference Include="..\..\src\serializers\NanoMessageBus.Serializers.MessagePack\NanoMessageBus.Serializers.MessagePack.csproj" />
+    <ProjectReference Include="..\..\src\serializers\NanoMessageBus.Serializers.Protobuf\NanoMessageBus.Serializers.Protobuf.csproj" />
   </ItemGroup>
 
 </Project>

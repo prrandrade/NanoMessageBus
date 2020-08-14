@@ -21,7 +21,7 @@ namespace NanoMessageBus.Sender.Test
         private Mock<IRabbitMqConnectionFactoryManager> ConnectionFactoryManagerMock { get; }
         private Mock<IDateTimeUtils> DateTimeUtilsMock { get; }
         private Mock<IPropertyRetriever> PropertyRetrieverMock { get; }
-        private Mock<ICompressor> CompressorMock { get; }
+        private Mock<ISerialization> SerializerMock { get; }
 
         private Mock<IConnectionFactory> ConnectionFactoryMock { get; }
         private Mock<IConnection> ConnectionMock { get; }
@@ -34,7 +34,7 @@ namespace NanoMessageBus.Sender.Test
             ConnectionFactoryManagerMock = new Mock<IRabbitMqConnectionFactoryManager>();
             DateTimeUtilsMock = new Mock<IDateTimeUtils>();
             PropertyRetrieverMock = new Mock<IPropertyRetriever>();
-            CompressorMock = new Mock<ICompressor>();
+            SerializerMock = new Mock<ISerialization>();
 
             ConnectionFactoryMock = new Mock<IConnectionFactory>();
             ConnectionMock = new Mock<IConnection>();
@@ -99,7 +99,7 @@ namespace NanoMessageBus.Sender.Test
             #endregion
 
             // act
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object);
 
             // assert
             if (maxShardingSize < 0)
@@ -135,7 +135,7 @@ namespace NanoMessageBus.Sender.Test
                 .Throws(ex);
 
             // act
-            var result = Record.Exception(() => new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object));
+            var result = Record.Exception(() => new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object));
 
             // assert
             Assert.IsType<InvalidOperationException>(result);
@@ -218,13 +218,13 @@ namespace NanoMessageBus.Sender.Test
 
             #endregion
 
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object);
             var message = new DummyIntMessage { Id = 0 };
             var expectedExchangeName = $"exchange.{identification}.0";
 
             var byteArray = Array.Empty<byte>();
-            CompressorMock
-                .Setup(x => x.CompressMessageAsync(It.IsAny<IMessage>()))
+            SerializerMock
+                .Setup(x => x.SerializeMessageAsync(It.IsAny<IMessage>()))
                 .ReturnsAsync(byteArray);
 
             // act
@@ -321,13 +321,13 @@ namespace NanoMessageBus.Sender.Test
 
             #endregion
 
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object);
             var message = new DummyIntMessage { Id = 0 };
             var expectedExchangeName = $"exchange.{identification}.0";
 
             var byteArray = Array.Empty<byte>();
-            CompressorMock
-                .Setup(x => x.CompressMessageAsync(It.IsAny<IMessage>()))
+            SerializerMock
+                .Setup(x => x.SerializeMessageAsync(It.IsAny<IMessage>()))
                 .ReturnsAsync(byteArray);
 
             // act
@@ -419,14 +419,14 @@ namespace NanoMessageBus.Sender.Test
 
             #endregion
 
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object);
             var message = new DummyIntMessage { Id = 5 };
             var expectedExchangeName = $"exchange.{identification}.0";
             static int CustomShardResolver(object o, int i) => 0;
 
             var byteArray = Array.Empty<byte>();
-            CompressorMock
-                .Setup(x => x.CompressMessageAsync(It.IsAny<IMessage>()))
+            SerializerMock
+                .Setup(x => x.SerializeMessageAsync(It.IsAny<IMessage>()))
                 .ReturnsAsync(byteArray);
 
             // act
@@ -513,7 +513,7 @@ namespace NanoMessageBus.Sender.Test
 
             #endregion
 
-            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, CompressorMock.Object);
+            var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object);
             var message = new DummyIntMessage { Id = 0 };
 
             // act

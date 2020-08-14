@@ -23,7 +23,7 @@ namespace NanoMessageBus.Sender.Services
         // injected dependencies
         public ILoggerFacade<SenderBus> Logger { get; }
         public IDateTimeUtils DateTimeUtils { get; }
-        public ICompressor Compressor { get; set; }
+        public ISerialization Serializer { get; set; }
 
         // private fields - configuration
         public int MaxShardingSize { get; }
@@ -33,13 +33,13 @@ namespace NanoMessageBus.Sender.Services
         public IConnection Connection { get; }
 
         public SenderBus(ILoggerFacade<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager, 
-            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, ICompressor compressor)
+            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, ISerialization serializer)
         {
             try
             {
                 Logger = logger;
                 DateTimeUtils = dateTimeUtils;
-                Compressor = compressor;
+                Serializer = serializer;
 
                 #region Getting Properties from command line or environment
                 Identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerIdentificationProperty, variableName: BrokerIdentificationProperty, fallbackValue: BrokerIdentificationFallbackValue);
@@ -149,7 +149,7 @@ namespace NanoMessageBus.Sender.Services
                 var exchange = string.Format(BusDetails.GetExchangeName(Identification, (uint)shardResolverResult));
 
                 // sending the message
-                var byteContent = await Compressor.CompressMessageAsync(message);
+                var byteContent = await Serializer.SerializeMessageAsync(message);
                 basicProperties.Headers.Add("sentAt", DateTimeUtils.UtcNow().ToBinary());
                 ch.BasicPublish(exchange, string.Empty, basicProperties, byteContent);
                 Logger.LogDebug($"Sending message {messageType.Name} to {exchange}");
@@ -210,15 +210,7 @@ namespace NanoMessageBus.Sender.Services
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static byte MessagePriorityToByte(MessagePriority messagePriority)
         {
-            return messagePriority switch
-            {
-                MessagePriority.NormalPriority => 0,
-                MessagePriority.Level1Priority => 1,
-                MessagePriority.Level2Priority => 2,
-                MessagePriority.Level3Priority => 3,
-                MessagePriority.Level4Priority => 4,
-                _ => throw new NotImplementedException()
-            };
+            return (byte) messagePriority;
         }
 
         #endregion

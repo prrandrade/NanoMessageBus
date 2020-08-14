@@ -4,26 +4,26 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Compressor.DeflateJson;
-    using Compressor.MessagePack;
-    using Compressor.Protobuf;
     using DateTimeUtils;
     using Interfaces;
     using Messages;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
+    using Serializers.DeflateJson;
     using PropertyRetriever;
     using PropertyRetriever.Interfaces;
     using Receiver;
     using Repository;
     using Sender;
+    using Serializers.MessagePack;
+    using Serializers.Protobuf;
 
     public class Program
     {
         private static async Task Main()
         {
             int totalMessages, warmupMessages, parallel;
-            string compress;
+            string serialization;
             var services = new ServiceCollection();
 
             // dependency injection
@@ -42,24 +42,24 @@
                     .GetService<IPropertyRetriever>()
                     .RetrieveFromCommandLine("warmupMessages", 500).ToList()[0];
 
-                compress = tempContainer.GetService<IPropertyRetriever>().RetrieveFromCommandLine("compress").ToList()[0];
-                switch (compress)
+                serialization = tempContainer.GetService<IPropertyRetriever>().RetrieveFromCommandLine("serialize").ToList()[0];
+                switch (serialization)
                 {
                     case "protobuf":
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using protobuf compress engine");
-                        services.AddNanoMessageBusProtobufCompressor();
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using protobuf serialization engine");
+                        services.AddNanoMessageBusProtobufSerialization();
                         break;
                     case "deflate":
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using deflate json compress engine");
-                        services.AddNanoMessageBusDeflateJsonCompressor();
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using deflate json serialization engine");
+                        services.AddNanoMessageBusDeflateJsonSerialization();
                         break;
                     case "messagepack":
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using messagepack compress engine");
-                        services.AddNanoMessageBusMessagePackCompressor();
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using messagepack serialization engine");
+                        services.AddNanoMessageBusMessagePackSerialization();
                         break;
                     default:
-                        compress = "default";
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using default json compress engine");
+                        serialization = "default";
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using default json serialization engine");
                         break;
                 }
             }
@@ -148,7 +148,7 @@
             countdown.Wait();
 
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Exporting results...");
-            var exporedResultsFileName = await container.GetService<IBenchmarkRepository>().ExportFilteredDataAsync(totalMessages, compress);
+            var exporedResultsFileName = await container.GetService<IBenchmarkRepository>().ExportFilteredDataAsync(totalMessages, serialization);
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Done!");
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Results can be found on file {exporedResultsFileName}");
         }

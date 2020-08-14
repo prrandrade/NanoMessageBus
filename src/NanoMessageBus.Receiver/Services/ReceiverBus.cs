@@ -21,7 +21,7 @@ namespace NanoMessageBus.Receiver.Services
         // injected dependencies
         public ILoggerFacade<ReceiverBus> Logger { get; }
         public IDateTimeUtils DateTimeUtils { get; }
-        public ICompressor Compressor { get; }
+        public ISerialization Serializer { get; }
         public IServiceScopeFactory ServiceScopeFactory { get; }
 
         // properties to control consumers and queues for this consumer
@@ -37,7 +37,7 @@ namespace NanoMessageBus.Receiver.Services
 
         public ReceiverBus(ILoggerFacade<ReceiverBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager,
             IRabbitMqEventingBasicConsumerManager basicConsumerManager, IServiceScopeFactory serviceScopeFactory, 
-            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, ICompressor compressor,
+            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, ISerialization serializer,
             IEnumerable<IMessageHandler> handlers)
         {
             try
@@ -45,7 +45,7 @@ namespace NanoMessageBus.Receiver.Services
                 Logger = logger;
                 DateTimeUtils = dateTimeUtils;
                 ServiceScopeFactory = serviceScopeFactory;
-                Compressor = compressor;
+                Serializer = serializer;
 
                 #region Getting Properties from command line or environment
 
@@ -178,7 +178,7 @@ namespace NanoMessageBus.Receiver.Services
                 return (null, null);
             }
 
-            var receivedMessage = await Compressor.DecompressMessageAsync(ea.Body.ToArray(), receivedMessageType);
+            var receivedMessage = await Serializer.DeserializeMessageAsync(ea.Body.ToArray(), receivedMessageType);
             var receivedConvertedMessage = (IMessage)receivedMessage;
 
             return (receivedConvertedMessage, receivedMessageType);

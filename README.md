@@ -18,7 +18,7 @@ The NanoMessageBus is built with two packages - **NanoMessaegBus.Sender** and **
 
 # Packages installation with .NET Core Dependency Injection Framework
 
-Using the native .NET Core dependency injection framework, you can install the **NanoMessageBus.Sender** and the **NanoMessageBus.Receiver** separately. Using a default `ServiceColletion` object, you can use the extension methods `AddSenderBus` and `AddReceiverBus` which register all the related dependencies.
+Using the native .NET Core dependency injection framework, you can install the **NanoMessageBus.Sender** package and the **NanoMessageBus.Receiver** package separately. Using a default `ServiceColletion` object, you can use the extension methods `AddSenderBus` and `AddReceiverBus` which register all the related dependencies.
 
 ```csharp
 var services = new ServiceCollection();
@@ -52,7 +52,7 @@ The following parameters must be set when you have a service that will send Rabb
 - **brokerPassword**: RabbitMQ password. Can be an environment variable or a command-line argument. The default value is **guest**.
 - **brokerIdentification**: How this service will be internally and externally identified. Can be an environment variable or a command-line argument. The default value is **NoIdentification**, but is ***absolutely recommended*** that each of your services has individual identification.
 
-- **brokerMaxShardingSize**: How many shards the whole system will have. This property must be the same value for all services, that's why it is only an environment variable. The default value is **1**.
+- **brokerMaxShardingSize**: How many shards the whole system will have. This property must be the same value for all services, that's why it is only an environment variable. The default value is **10**.
 
 When a service with the **NanoMessageBus.Sender** package is started, you can see that some RabbitMQ Exchanges are created - the same quantity of shards (property **brokerMaxShardingSize**), and identified with the property **brokerIdentification**. For example, for a service identified as _ExampleService_ and with 10 shards, the following Rabbit MQ exchanges are created:
 
@@ -191,12 +191,12 @@ public class ExampleHandler : MessageHandlerBase<ExampleMessage> { }
 ```
 
 - There are for methods inside `MessageHandlerBase<>` that can be overridden to process the received message:
-- `Task RegisterStatisticsAsync(DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt)`, for statistics purpose, this method will receive the UTC DateTimes to mark when the message was sent and received.
+- `Task RegisterStatisticsAsync(TMessage message, int messageSize, DateTime prepareToSendAt, DateTime sentAt, DateTime receivedAt, DateTime handledAt)`, for statistics purpose, this method will receive the UTC DateTimes to mark when the message was sent and received.
 - `Task<bool> BeforeHandleAsync(TMessage message)`, if you want to check if this message can be processed.
 - `Task HandleAsync(TMessage message)`, to, in fact, process the message.
 - `Task AfterHandleAsync(TMessage message)`, to apply some post-processing for the received message.
 
-As today, every message the [auto acked](https://www.rabbitmq.com/confirms.html) and a received message can never generate an answer to the service that sent it - remember, every message is **broadcasted ** in an asynchronous one-way path.
+As today, every message is [auto acked](https://www.rabbitmq.com/confirms.html) and a received message can never generate an answer to the service that sent it - remember, every message is **broadcasted ** in **an asynchronous one-way path**.
 
 As an example, the _ReceiverService_ can be started like this (note that all other properties are using the default values):
 
@@ -205,37 +205,22 @@ As an example, the _ReceiverService_ can be started like this (note that all oth
 ```
 
 
-
 # Benchmark scenario
 
-I've run two benchmark scenarios using my server and my workstation, using WiFi-5. In each scenario, 500000 messages were sent in batches of 16 messages with 1 ms of interval. One machine had the RabbitMQ Server installed, the other machine had a service sending and receiving the messages. The machines were restarted for each test and the outlier messages were **not** ignored.
+I've run a benchmark scenario using both of my machines as a client (with the service) and as a server (with a RabbitMQ Docker container). 500000 messages were sent in batches of 16 messages with 1 ms of interval. 
 
-- My **Personal Server** is a Intel i3-9100T with 8GB RAM.
-- My **Workstation** is a AMD Ryzen 9 4950x with 64GB RAM.
+- My **Client** is a Intel Core i3-9100T (4 cores and 4 threads) with 8GB RAM.
+- My **Rabbit MQ Server** is a AMD Ryzen 9 3950x (16 cores and 32 threads) with 64GB RAM.
 
-The results, in milliseconds:
+On average  **595 messages/second** were sent, and that's the results, in milliseconds:
 
-#### Workstation as Client, Personal Server as RabbitMQ Server:
+|Percentile|Total time (ms)|
+| ---- | ---- |
+| 90                | 13.105          |
+| 95                | 99              |
+| 99                | 30.165          |
+| 99.9              | 94.535          |
+| 99.99             | 990.832         |
+| 100 (worse case!) | 3293.314        |
 
-|Percentile|Travel Time (ms)|Total Time (ms)|
-| ---- | ---- | ---- |
-|90|20,1009|20,1406|
-|95|27,3741|27,4171|
-|99|42,6010|42,6397|
-|99,9|64,1457|64,1792|
-|99,99|151,8811|151,9242|
-|100|477,6495|477,6841|
-
-#### Workstation as RabbitMQ Server, Personal Server as Client:
-
-| Percentile | Travel Time (ms) | Total Time (ms) |
-| ---------- | ---------------- | --------------- |
-| 90         | 11,4225          | 11,5125         |
-| 95         | 12,6897          | 12,7846         |
-| 99         | 19,4576          | 19,5586         |
-| 99,9       | 51,4196          | 51,5510         |
-| 99,99      | 3021,6010        | 3021,7216       |
-| 100        | 12994,9659       | 13014,1834      |
-
-If you ignore the outliers, caused by the cold boot and the fact that the **Personal Server** have way fewer cores than the workstation, the results show that the abstractions used by  **NanoMessageBus.Sender** and **NanoMessageBus.Receiver** can facilitate the RabbitMQ message consuming!
-
+As you can see, more than **99%** of **500000 messages** were processed on less than **100 ms**, using a Wi-Fi network!
