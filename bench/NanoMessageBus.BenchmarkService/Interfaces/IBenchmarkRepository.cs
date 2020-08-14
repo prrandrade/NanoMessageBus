@@ -7,6 +7,6 @@
     {
         void SaveInfo(Guid messageId, int messageSize, long prepareToSendAt, long sentAt, long receivedAt, long handledAt);
 
-        Task ExportFilteredDataAsync(int totalMessages, string compressEngine);
+        Task<string> ExportFilteredDataAsync(int totalMessages, string compressEngine);
     }
 }

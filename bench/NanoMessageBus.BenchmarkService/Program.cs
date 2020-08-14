@@ -145,8 +145,9 @@
             countdown.Wait();
 
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Exporting results...");
-            await container.GetService<IBenchmarkRepository>().ExportFilteredDataAsync(totalMessages, compress);
+            var exporedResultsFileName = await container.GetService<IBenchmarkRepository>().ExportFilteredDataAsync(totalMessages, compress);
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Done!");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Results can be found on file {exporedResultsFileName}");
         }
     }
 }

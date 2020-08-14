@@ -33,7 +33,7 @@
             });
         }
 
-        public async Task ExportFilteredDataAsync(int totalMessages, string compressEngine)
+        public async Task<string> ExportFilteredDataAsync(int totalMessages, string compressEngine)
         {
             var infos = _infosCollection.FindAll().ToList();
             var sendTimes = infos.Select(x => x.SendTime).OrderBy(x => x).ToList();
@@ -85,6 +85,8 @@
             await sw.WriteLineAsync($"{"Time", -10}\tMessages/seg");
             foreach (var (key, value) in numbers)
                 await sw.WriteLineAsync($"{key, -10}\t{value}");
+
+            return $"benchmark_{compressEngine}.txt";
         }
 
         private static T GetNthPercentile<T>(IReadOnlyList<T> values, double percentile)
