@@ -34,11 +34,9 @@
                 parallel = tempContainer
                     .GetService<IPropertyRetriever>()
                     .RetrieveFromCommandLine("parallel", Environment.ProcessorCount).ToList()[0];
-
                 totalMessages = tempContainer
                     .GetService<IPropertyRetriever>()
                     .RetrieveFromCommandLine("totalMessages", 1000000).ToList()[0];
-
                 warmupMessages = tempContainer
                     .GetService<IPropertyRetriever>()
                     .RetrieveFromCommandLine("warmupMessages", 500).ToList()[0];
