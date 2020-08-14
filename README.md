@@ -213,7 +213,7 @@ I've run a benchmark scenario using both of my machines as a client (with the se
 - My **Client** is a Intel Core i3-9100T (4 cores and 4 threads) with 8GB RAM.
 - My **Rabbit MQ Server** is a AMD Ryzen 9 3950x (16 cores and 32 threads) with 64GB RAM.
 
-On average  **595 messages/second** were sent, and that's the results, in milliseconds:
+On average **595 messages** were sent **per second**, each message with **1227 bytes**, and that's the results in milliseconds:
 
 |Percentile|Total time (ms)|
 | ---- | ---- |
@@ -230,3 +230,59 @@ As you can see, more than **99%** of **500000 messages** were processed on less 
 
 # Other Serializers
 
+These benchmark numbers can be achived using the default JSON serializer used by NanoMessageBus.Sender and NanoMessageBus.Receiver. You can, however, use customized serializers for more network performance or more serialization performance. As today, we have three cutomized serializers:
+
+- NanoMessageBus.Serializers.DeflateJson, using a DeflateStream to compress the serialized Json.
+- NanoMessageBus.Serializers.Protobuf, using the Protobuf-net.Core package for serialization.
+- NanoMessageBus.Serializers.MessagePack, using the MessagePack package for serializarion.
+
+The installation is simple, but **only one package must be used**:
+
+```csharp
+var services = new ServiceCollection();
+services.AddNanoMessageBusDeflateJsonSerialization(); // now the packages will serialize/deserialize all the messafges using the NanoMessageBus.Serializers.DeflateJson package
+```
+
+```csharp
+var services = new ServiceCollection();
+services.AddNanoMessageBusProtobufSerialization(); // now the packages will serialize/deserialize all the messafges using the NanoMessageBus.Serializers.Protobuf package
+```
+
+```csharp
+var services = new ServiceCollection();
+services.AddNanoMessageBusMessagePackSerialization(); // now the packages will serialize/deserialize all the messafges using the NanoMessageBus.Serializers.MessagePack package
+```
+
+
+
+The performance is also different, because you're adding more processing for serialization and deserialization, but a small message results in more messages being sent per second. Each scenario deserves a particular test, but in my particular scenario, the results are interesting:
+
+
+
+#### NanoMessageBus.Serializers.DeflateJson
+
+On average **653 messages** were sent **per second**, each message with **578 bytes**, and that's the results in milliseconds:
+
+| Percentile        | Total time (ms) |
+| ----------------- | --------------- |
+| 90                | 11.520          |
+| 95                | 13.244          |
+| 99                | 21.999          |
+| 99.9              | 599.229         |
+| 99.99             | 1000.898        |
+| 100 (worse case!) | 2770.285        |
+
+ #### NanoMessageBus.Serializers.Protobuf
+
+On average **654 messages** were sent **per second**, each message with **789 bytes**, and that's the results in milliseconds:
+
+| Percentile        | Total time (ms) |
+| ----------------- | --------------- |
+| 90                | 11.470          |
+| 95                | 13.262          |
+| 99                | 22.917          |
+| 99.9              | 773.379         |
+| 99.99             | 985.780         |
+| 100 (worse case!) | 1025.408        |
+
+#### NanoMessageBus.Serializers.MessagePack
