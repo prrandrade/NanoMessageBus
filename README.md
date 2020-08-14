@@ -286,3 +286,14 @@ On average **654 messages** were sent **per second**, each message with **789 by
 | 100 (worse case!) | 1025.408        |
 
 #### NanoMessageBus.Serializers.MessagePack
+
+On average **493 messages** were sent **per second**, each message with **1140 bytes**, and that's the results in milliseconds:
+
+| Percentile        | Total time (ms) |
+| ----------------- | --------------- |
+| 90                | 18.391          |
+| 95                | 23.396          |
+| 99                | 46.503          |
+| 99.9              | 661.626         |
+| 99.99             | 1030.943        |
+| 100 (worse case!) | 5951.829        |
