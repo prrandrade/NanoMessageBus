@@ -15,8 +15,6 @@
 
 The NanoMessageBus is built with two packages - **NanoMessaegBus.Sender** and **NanoMessageBus.Receiver** with a simple objective: abstract all the logic of a [RabbitMQ server](https://www.rabbitmq.com/) communication and send/receive asynchronous messages in an **easy** and **fast** way!
 
-
-
 # Nuget Packages
 
 - [NanoMessageBus.Sender](https://www.nuget.org/packages/NanoMessageBus.Sender/)
@@ -24,8 +22,6 @@ The NanoMessageBus is built with two packages - **NanoMessaegBus.Sender** and **
 - [NanoMessageBus.Serializers.DeflateJson](https://www.nuget.org/packages/NanoMessageBus.Serializers.DeflateJson/)
 - [NanoMessageBus.Serializers.Protobuf](https://www.nuget.org/packages/NanoMessageBus.Serializers.Protobuf/)
 - [NanoMessageBus.Serializers.MessagePack](https://www.nuget.org/packages/NanoMessageBus.Serializers.MessagePack/)
-
-
 
 # Packages installation with .NET Core Dependency Injection Framework
 
@@ -50,8 +46,6 @@ Last but not least, when you are using the **NanoMessageBus.Receiver** to receiv
 ```csharp
 container.ConsumeMessages();
 ```
-
-
 
 # NanoMessageBus.Sender - How to send messages with RabbitMQ
 
@@ -152,8 +146,6 @@ As an example, the _ExampleService_ can be started like this (note that all othe
 ./Service.exe --brokerIdentification ExampleService
 ```
 
-
-
 # NanoMessageBus.Receiver - Receiving messages with RabbitMQ
 
 The following parameters must be set when you have a service that will receive RabbitMQ messages:
@@ -215,8 +207,6 @@ As an example, the _ReceiverService_ can be started like this (note that all oth
 ./Service.exe --brokerIdentification ReceiverService --brokerListenedServices SenderService,AnotherSenderService
 ```
 
-
-
 # Benchmark scenario
 
 I've run a benchmark scenario using both of my machines as a client (with the service) and as a server (with a RabbitMQ Docker container). 500000 messages were sent in batches of 16 messages with 1 ms of interval. 
@@ -236,8 +226,6 @@ On average **595 messages** were sent **per second**, each message with **1227 b
 | 100 (worse case!) | 3293.314        |
 
 As you can see, more than **99%** of **500000 messages** were processed on less than **100 ms**, using a Wi-Fi network!
-
-
 
 # Customized Serializers
 
@@ -264,11 +252,7 @@ var services = new ServiceCollection();
 services.AddNanoMessageBusMessagePackSerialization(); // now the packages will serialize/deserialize all the messafges using the NanoMessageBus.Serializers.MessagePack package
 ```
 
-
-
 The performance is also different, because you're adding more processing for serialization and deserialization, but a small message results in more messages being sent per second. Each scenario deserves a particular test, but in my particular scenario, the results are interesting:
-
-
 
 #### NanoMessageBus.Serializers.DeflateJson
 
@@ -283,7 +267,7 @@ On average **653 messages** were sent **per second**, each message with **578 by
 | 99.99             | 1000.898        |
 | 100 (worse case!) | 2770.285        |
 
- #### NanoMessageBus.Serializers.Protobuf
+#### NanoMessageBus.Serializers.Protobuf
 
 On average **654 messages** were sent **per second**, each message with **789 bytes**, and that's the results in milliseconds:
 
