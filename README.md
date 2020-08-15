@@ -1,6 +1,5 @@
 # NanoMessageBus Sender & Receiver
 
-
 # Summary
 
 - [Introduction](#introduction)
