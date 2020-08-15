@@ -3,13 +3,14 @@
     using System;
     using System.IO;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using global::MessagePack;
     using global::MessagePack.Resolvers;
 
     public class MessagePackSerialization : ISerialization
     {
-        public string Identification => "Message Pack";
+        public SerializationEngine Identification => SerializationEngine.MessagePack;
 
         public async Task<byte[]> SerializeMessageAsync(IMessage message)
         {

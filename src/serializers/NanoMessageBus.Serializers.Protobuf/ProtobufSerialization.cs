@@ -3,12 +3,13 @@
     using System;
     using System.IO;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using ProtoBuf;
 
     public class ProtobufSerialization : ISerialization
     {
-        public string Identification => "Protobuf";
+        public SerializationEngine Identification => SerializationEngine.Protobuf;
 
         public async Task<byte[]> SerializeMessageAsync(IMessage message)
         {

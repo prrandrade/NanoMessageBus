@@ -6,11 +6,12 @@
     using System.Runtime.CompilerServices;
     using System.Text.Json;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
 
     public class DeflateJsonSerialization : ISerialization
     {
-        public string Identification => "Deflate Json";
+        public SerializationEngine Identification => SerializationEngine.DeflateJson;
 
         public async Task<byte[]> SerializeMessageAsync(IMessage message)
         {

@@ -5,6 +5,7 @@ namespace NanoMessageBus.Serializers.NativeJson.Test
     using System.Text;
     using System.Text.Json;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using NativeJson;
     using Xunit;
@@ -40,7 +41,7 @@ namespace NanoMessageBus.Serializers.NativeJson.Test
             var compressor = new NativeJsonSerialization();
 
             // assert
-            Assert.Equal("Json", compressor.Identification);
+            Assert.Equal(SerializationEngine.NativeJson, compressor.Identification);
         }
 
         [Fact]

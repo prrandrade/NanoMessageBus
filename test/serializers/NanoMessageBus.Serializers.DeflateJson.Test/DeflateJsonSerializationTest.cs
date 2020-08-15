@@ -7,6 +7,7 @@ namespace NanoMessageBus.Serializers.DeflateJson.Test
     using System.Text;
     using System.Text.Json;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using DeflateJson;
     using Xunit;
@@ -42,7 +43,7 @@ namespace NanoMessageBus.Serializers.DeflateJson.Test
             var compressor = new DeflateJsonSerialization();
 
             // assert
-            Assert.Equal("Deflate Json", compressor.Identification);
+            Assert.Equal(SerializationEngine.DeflateJson, compressor.Identification);
         }
 
         [Fact]

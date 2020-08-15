@@ -27,7 +27,7 @@ namespace NanoMessageBus.Sender.Services
         // injected dependencies
         public ILoggerFacade<SenderBus> Logger { get; }
         public IDateTimeUtils DateTimeUtils { get; }
-        public ISerialization Serializer { get; set; }
+        public IEnumerable<ISerialization> Serializers { get; set; }
 
         // private fields - configuration
         public int MaxShardingSize { get; }
@@ -37,13 +37,13 @@ namespace NanoMessageBus.Sender.Services
         public IConnection Connection { get; }
 
         public SenderBus(ILoggerFacade<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager, 
-            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, ISerialization serializer)
+            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, IEnumerable<ISerialization> serializers)
         {
             try
             {
                 Logger = logger;
                 DateTimeUtils = dateTimeUtils;
-                Serializer = serializer;
+                Serializers = serializers;
 
                 #region Getting Properties from command line or environment
                 Identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerIdentificationProperty, variableName: BrokerIdentificationProperty, fallbackValue: BrokerIdentificationFallbackValue);

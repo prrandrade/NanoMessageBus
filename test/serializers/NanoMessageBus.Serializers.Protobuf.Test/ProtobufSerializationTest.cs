@@ -4,6 +4,7 @@ namespace NanoMessageBus.Serializers.Protobuf.Test
     using System.Collections.Generic;
     using System.IO;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using ProtoBuf;
     using Xunit;
@@ -49,7 +50,7 @@ namespace NanoMessageBus.Serializers.Protobuf.Test
             var compressor = new ProtobufSerialization();
 
             // assert
-            Assert.Equal("Protobuf", compressor.Identification);  
+            Assert.Equal(SerializationEngine.Protobuf, compressor.Identification);  
         }
 
         [Fact]

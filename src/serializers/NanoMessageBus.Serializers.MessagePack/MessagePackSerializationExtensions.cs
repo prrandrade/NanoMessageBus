@@ -2,13 +2,12 @@
 {
     using Abstractions.Interfaces;
     using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.DependencyInjection.Extensions;
 
     public static class MessagePackSerializationExtensions
     {
         public static IServiceCollection AddNanoMessageBusMessagePackSerialization(this IServiceCollection @this)
         {
-            @this.TryAddSingleton<ISerialization, MessagePackSerialization>();
+            @this.AddSingleton<ISerialization, MessagePackSerialization>();
             return @this;
         }
     }

@@ -2,10 +2,11 @@
 {
     using System;
     using System.Threading.Tasks;
+    using Enums;
 
     public interface ISerialization
     {
-        public string Identification { get; }
+        public SerializationEngine Identification { get; }
 
         public Task<byte[]> SerializeMessageAsync(IMessage message);
 

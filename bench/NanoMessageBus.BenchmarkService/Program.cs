@@ -9,12 +9,12 @@
     using Messages;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
-    using Serializers.DeflateJson;
     using PropertyRetriever;
     using PropertyRetriever.Interfaces;
     using Receiver;
     using Repository;
     using Sender;
+    using Serializers.DeflateJson;
     using Serializers.MessagePack;
     using Serializers.Protobuf;
 
@@ -23,7 +23,7 @@
         private static async Task Main()
         {
             int totalMessages, warmupMessages, parallel;
-            string serialization;
+            const string serialization = "";
             var services = new ServiceCollection();
 
             // dependency injection
@@ -41,28 +41,13 @@
                 warmupMessages = tempContainer
                     .GetService<IPropertyRetriever>()
                     .RetrieveFromCommandLine("warmupMessages", 500).ToList()[0];
-
-                serialization = tempContainer.GetService<IPropertyRetriever>().RetrieveFromCommandLine("serialize").ToList()[0];
-                switch (serialization)
-                {
-                    case "protobuf":
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using protobuf serialization engine");
-                        services.AddNanoMessageBusProtobufSerialization();
-                        break;
-                    case "deflate":
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using deflate json serialization engine");
-                        services.AddNanoMessageBusDeflateJsonSerialization();
-                        break;
-                    case "messagepack":
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using messagepack serialization engine");
-                        services.AddNanoMessageBusMessagePackSerialization();
-                        break;
-                    default:
-                        serialization = "default";
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Using default json serialization engine");
-                        break;
-                }
             }
+
+            services.AddNanoMessageBusProtobufSerialization();
+            services.AddNanoMessageBusDeflateJsonSerialization();
+            services.AddNanoMessageBusMessagePackSerialization();
+
+
             services.AddSenderBus();
             services.AddReceiverBus();
 

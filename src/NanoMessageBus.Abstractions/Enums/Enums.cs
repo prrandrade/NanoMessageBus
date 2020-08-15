@@ -8,4 +8,12 @@
         Level3Priority,
         Level4Priority
     }
+
+    public enum SerializationEngine
+    {
+        NativeJson,
+        DeflateJson,
+        Protobuf,
+        MessagePack
+    }
 }

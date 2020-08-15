@@ -4,6 +4,7 @@ namespace NanoMessageBus.Serializers.MessagePack.Test
     using System.Collections.Generic;
     using System.IO;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using global::MessagePack;
     using global::MessagePack.Resolvers;
@@ -41,7 +42,7 @@ namespace NanoMessageBus.Serializers.MessagePack.Test
             var compressor = new MessagePackSerialization();
 
             // assert
-            Assert.Equal("Message Pack", compressor.Identification);
+            Assert.Equal(SerializationEngine.MessagePack, compressor.Identification);
         }
 
         [Fact]

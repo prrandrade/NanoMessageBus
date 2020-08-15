@@ -3,11 +3,12 @@
     using System;
     using System.IO;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
 
     public class NativeJsonSerialization : ISerialization
     {
-        public string Identification => "Json";
+        public SerializationEngine Identification => SerializationEngine.NativeJson;
 
         public async Task<byte[]> SerializeMessageAsync(IMessage message)
         {

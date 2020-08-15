@@ -1,14 +1,16 @@
 ﻿namespace NanoMessageBus.Serializers.NativeJson
 {
+    using System.Linq;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.DependencyInjection.Extensions;
 
     public static class NativeJsonSerializationExtensions
     {
         public static IServiceCollection AddNanoMessageBusNativeJsonSerializer(this IServiceCollection @this)
         {
-            @this.TryAddSingleton<ISerialization, NativeJsonSerialization>();
+            if (!@this.Any(x => x.ImplementationType == typeof(NativeJsonSerialization) && x.ServiceType == typeof(ISerialization)))
+                @this.AddSingleton<ISerialization, NativeJsonSerialization>();
             return @this;
         }
     }
