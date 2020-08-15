@@ -4,9 +4,15 @@
     using System.Threading.Tasks;
     using Abstractions.Enums;
     using Abstractions.Interfaces;
+    using EventArgs;
 
     public interface ISenderBus
     {
+        /// <summary>
+        /// Event triggered when a Message is sent
+        /// </summary>
+        public event EventHandler<MessageSentEventArgs> MessageSent;
+
         /// <summary>
         /// Send a message via RabbitMQ to all listening services.
         /// </summary>

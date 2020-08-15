@@ -12,6 +12,7 @@ namespace NanoMessageBus.Sender.Services
     using Abstractions.Enums;
     using Abstractions.Interfaces;
     using DateTimeUtils.Interfaces;
+    using EventArgs;
     using Extensions;
     using Interfaces;
     using PropertyRetriever.Interfaces;
@@ -20,6 +21,9 @@ namespace NanoMessageBus.Sender.Services
 
     public class SenderBus : ISenderBus
     {
+        // events
+        public event EventHandler<MessageSentEventArgs> MessageSent;
+
         // injected dependencies
         public ILoggerFacade<SenderBus> Logger { get; }
         public IDateTimeUtils DateTimeUtils { get; }
@@ -154,6 +158,13 @@ namespace NanoMessageBus.Sender.Services
                 ch.BasicPublish(exchange, string.Empty, basicProperties, byteContent);
                 Logger.LogDebug($"Sending message {messageType.Name} to {exchange}");
                 ch.Close();
+
+                MessageSent?.Invoke(this, new MessageSentEventArgs
+                {
+                    Message = message,
+                    MessageSize = byteContent.Length,
+                    MessageType = messageType
+                });
             }
             catch (Exception ex)
             {
