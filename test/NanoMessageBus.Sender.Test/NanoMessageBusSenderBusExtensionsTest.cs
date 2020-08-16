@@ -46,6 +46,16 @@
         public void UseSenderBus(SerializationEngine serializationEngine)
         {
             // arrange
+            var deflateJsonSerialization = new Mock<ISerialization>();
+            var nativeJsonSerialization = new Mock<ISerialization>();
+            var messagePackSerialization = new Mock<ISerialization>();
+            var protobufSerialization = new Mock<ISerialization>();
+
+            deflateJsonSerialization.SetupGet(x => x.Identification).Returns(SerializationEngine.DeflateJson);
+            nativeJsonSerialization.SetupGet(x => x.Identification).Returns(SerializationEngine.NativeJson);
+            messagePackSerialization.SetupGet(x => x.Identification).Returns(SerializationEngine.MessagePack);
+            protobufSerialization.SetupGet(x => x.Identification).Returns(SerializationEngine.Protobuf);
+
             var mockConnectionFactoryManager = new Mock<IRabbitMqConnectionFactoryManager>();
             var mockConnectionFactory = new Mock<IConnectionFactory>();
             var mockConnection = new Mock<IConnection>();
@@ -55,6 +65,11 @@
             mockConnection.Setup(x => x.CreateModel()).Returns(mockChannel.Object);
 
             var services = new ServiceCollection();
+            services.AddSingleton(deflateJsonSerialization.Object);
+            services.AddSingleton(nativeJsonSerialization.Object);
+            services.AddSingleton(messagePackSerialization.Object);
+            services.AddSingleton(protobufSerialization.Object);
+
             services.TryAddSingleton(mockConnectionFactoryManager.Object);
             services.AddSenderBus();
             var container = services.BuildServiceProvider();
@@ -63,7 +78,7 @@
             container.UseSenderBus(serializationEngine);
 
             // assert
-            Assert.Equal(serializationEngine, container.GetService<ISenderBus>().DefaultSerializationEngineChoice);
+            Assert.Equal(serializationEngine, container.GetService<ISenderBus>().DefaultSerializationEngine.Identification);
             mockConnectionFactoryManager.Verify(x => x.GetConnectionFactory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
             mockConnectionFactory.Verify(x => x.CreateConnection(It.IsAny<IList<string>>()), Times.Once);
             mockConnection.Verify(x => x.CreateModel(), Times.Once);
@@ -90,7 +105,7 @@
             container.UseSenderBus();
 
             // assert
-            Assert.Equal(SerializationEngine.NativeJson, container.GetService<ISenderBus>().DefaultSerializationEngineChoice);
+            Assert.Equal(SerializationEngine.NativeJson, container.GetService<ISenderBus>().DefaultSerializationEngine.Identification);
             mockConnectionFactoryManager.Verify(x => x.GetConnectionFactory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
             mockConnectionFactory.Verify(x => x.CreateConnection(It.IsAny<IList<string>>()), Times.Once);
             mockConnection.Verify(x => x.CreateModel(), Times.Once);

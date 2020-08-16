@@ -29,7 +29,7 @@
         public static ServiceProvider UseSenderBus(this ServiceProvider @this, SerializationEngine defaultSerializationEngine = SerializationEngine.NativeJson)
         {
             var _ = @this.GetService<ISenderBus>();
-            _.DefaultSerializationEngineChoice = defaultSerializationEngine;
+            _.SetDefaultSerializationEngine(defaultSerializationEngine);
             return @this;
         }
 

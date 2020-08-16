@@ -32,8 +32,7 @@ namespace NanoMessageBus.Sender.Services
         // public properties
         public int MaxShardingSize { get; }
         public string Identification { get; }
-        public ISerialization DefaultSerializationEngine { get; }
-        public SerializationEngine DefaultSerializationEngineChoice { get; set; } = SerializationEngine.NativeJson;
+        public ISerialization DefaultSerializationEngine { get; private set; }
         public IConnection Connection { get; }
 
         public SenderBus(ILoggerFacade<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager,
@@ -45,15 +44,7 @@ namespace NanoMessageBus.Sender.Services
                 DateTimeUtils = dateTimeUtils;
                 Serializers = serializers.ToList();
 
-                #region Loading the default serialization engine, falling back to Native Json
-
-                DefaultSerializationEngine = Serializers.FirstOrDefault(x => x.Identification == DefaultSerializationEngineChoice);
-                if (DefaultSerializationEngine == null)
-                {
-                    Logger.LogWarning($"SerializationEngine {DefaultSerializationEngineChoice} not found, falling back to {SerializationEngine.NativeJson}.");
-                    DefaultSerializationEngine = Serializers.First(x => x.Identification == SerializationEngine.NativeJson);
-                }
-                #endregion
+                DefaultSerializationEngine = Serializers.First(x => x.Identification == SerializationEngine.NativeJson);
 
                 #region Getting Properties from command line or environment
                 Identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerIdentificationProperty, variableName: BrokerIdentificationProperty, fallbackValue: BrokerIdentificationFallbackValue);
@@ -94,6 +85,21 @@ namespace NanoMessageBus.Sender.Services
             catch (Exception ex)
             {
                 throw new InvalidOperationException("A error has occurred, impossible to continue. Please see the inner exception for details.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Set the default serialization engine for sending messages
+        /// </summary>
+        /// <param name="serializationEngine">Serialization engine</param>
+        /// <remarks>If the choice is invalid, the fall back option will be NativeJson</remarks>
+        public void SetDefaultSerializationEngine(SerializationEngine serializationEngine = SerializationEngine.NativeJson)
+        {
+            DefaultSerializationEngine = Serializers.FirstOrDefault(x => x.Identification == serializationEngine);
+            if (DefaultSerializationEngine == null)
+            {
+                Logger.LogWarning($"SerializationEngine {serializationEngine} not found, falling back to {SerializationEngine.NativeJson}.");
+                DefaultSerializationEngine = Serializers.First(x => x.Identification == SerializationEngine.NativeJson);
             }
         }
 
@@ -151,7 +157,7 @@ namespace NanoMessageBus.Sender.Services
                     serializer = Serializers.FirstOrDefault(x => x.Identification == serializationEngine);
                     if (serializer == null)
                     {
-                        Logger.LogWarning($"SerializationEngine {DefaultSerializationEngineChoice} not found, falling back to the default serializer.");
+                        Logger.LogWarning($"SerializationEngine {serializationEngine} not found, falling back to the default serializer.");
                         serializer = DefaultSerializationEngine;
                     }
                 }
@@ -172,7 +178,7 @@ namespace NanoMessageBus.Sender.Services
                 basicProperties.Headers = new Dictionary<string, object>
                 {
                     { "prepareToSendAt", DateTimeUtils.UtcNow().ToBinary() },
-                    { "serializerType", serializer.Identification }
+                    { "serializer", serializer.Identification }
                 };
                 basicProperties.DeliveryMode = 2;
                 basicProperties.Type = fullName;

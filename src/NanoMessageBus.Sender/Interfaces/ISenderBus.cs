@@ -12,11 +12,18 @@
         /// Event triggered when a Message is sent
         /// </summary>
         public event EventHandler<MessageSentEventArgs> MessageSent;
-        
+
         /// <summary>
-        /// Default serialization engine
+        /// Get the default serialization engine used to all messages
         /// </summary>
-        public SerializationEngine DefaultSerializationEngineChoice { get; set; }
+        public ISerialization DefaultSerializationEngine { get; }
+
+        /// <summary>
+        /// Define the default serialization engine for sending messages
+        /// </summary>
+        /// <param name="serializationEngine">Serialization engine</param>
+        /// <remarks>If the choice is invalid, the fall back option will be NativeJson</remarks>
+        void SetDefaultSerializationEngine(SerializationEngine serializationEngine = SerializationEngine.NativeJson);
 
         /// <summary>
         /// Send a message via RabbitMQ to all listening services.
