@@ -27,23 +27,33 @@ namespace NanoMessageBus.Sender.Services
         // injected dependencies
         public ILoggerFacade<SenderBus> Logger { get; }
         public IDateTimeUtils DateTimeUtils { get; }
-        public IEnumerable<ISerialization> Serializers { get; set; }
+        public List<ISerialization> Serializers { get; set; }
 
-        // private fields - configuration
+        // public properties
         public int MaxShardingSize { get; }
         public string Identification { get; }
-
-        // private fields - rabbitmq
+        public ISerialization DefaultSerializationEngine { get; }
+        public SerializationEngine DefaultSerializationEngineChoice { get; set; } = SerializationEngine.NativeJson;
         public IConnection Connection { get; }
 
-        public SenderBus(ILoggerFacade<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager, 
+        public SenderBus(ILoggerFacade<SenderBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager,
             IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, IEnumerable<ISerialization> serializers)
         {
             try
             {
                 Logger = logger;
                 DateTimeUtils = dateTimeUtils;
-                Serializers = serializers;
+                Serializers = serializers.ToList();
+
+                #region Loading the default serialization engine, falling back to Native Json
+
+                DefaultSerializationEngine = Serializers.FirstOrDefault(x => x.Identification == DefaultSerializationEngineChoice);
+                if (DefaultSerializationEngine == null)
+                {
+                    Logger.LogWarning($"SerializationEngine {DefaultSerializationEngineChoice} not found, falling back to {SerializationEngine.NativeJson}.");
+                    DefaultSerializationEngine = Serializers.First(x => x.Identification == SerializationEngine.NativeJson);
+                }
+                #endregion
 
                 #region Getting Properties from command line or environment
                 Identification = propertyRetriever.RetrieveFromCommandLineOrEnvironment(longName: BrokerIdentificationProperty, variableName: BrokerIdentificationProperty, fallbackValue: BrokerIdentificationFallbackValue);
@@ -92,10 +102,15 @@ namespace NanoMessageBus.Sender.Services
         /// </summary>
         /// <param name="message">Message that will be sent.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
-        public async Task SendAsync(IMessage message)
-        {
-            await SendAsync(message, MessagePriority.NormalPriority, null);
-        }
+        public async Task SendAsync(IMessage message) => await SendAsync(message, null, MessagePriority.NormalPriority, null);
+
+        /// <summary>
+        /// Send a message via RabbitMQ to all listening services.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="serializationEngine"></param>
+        /// <returns></returns>
+        public async Task SendAsync(IMessage message, SerializationEngine serializationEngine) => await SendAsync(message, serializationEngine, MessagePriority.NormalPriority, null);
 
         /// <summary>
         /// Send a message via RabbitMQ to all listening services.
@@ -103,10 +118,7 @@ namespace NanoMessageBus.Sender.Services
         /// <param name="message">Message that will be sent.</param>
         /// <param name="priority">Message priority. Messages with more priority are processed earlier.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
-        public async Task SendAsync(IMessage message, MessagePriority priority)
-        {
-            await SendAsync(message, priority, null);
-        }
+        public async Task SendAsync(IMessage message, MessagePriority priority) => await SendAsync(message, null, priority, null);
 
         /// <summary>
         /// Send a message via RabbitMQ to all listening services.
@@ -114,50 +126,72 @@ namespace NanoMessageBus.Sender.Services
         /// <param name="message">Message that will be sent.</param>
         /// <param name="shardResolver">Customized function to decide which shard will be used. The first parameter must be converted to Guid or Int.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
-        public async Task SendAsync(IMessage message, Func<object, int, int> shardResolver)
-        {
-            await SendAsync(message, MessagePriority.NormalPriority, shardResolver);
-        }
+        public async Task SendAsync(IMessage message, Func<object, int, int> shardResolver) => await SendAsync(message, null, MessagePriority.NormalPriority, shardResolver);
 
         /// <summary>
         /// Send a message via RabbitMQ to all listening services.
         /// </summary>
         /// <param name="message">Message that will be sent.</param>
+        /// <param name="serializationEngine">Serialization engine used to serialize this message (receiving services MUST have the serialization engine installed!)</param>
         /// <param name="priority">Message priority. Messages with more priority are processed earlier.</param>
         /// <param name="shardResolver">Customized function to decide which shard will be used. The first parameter must be converted to Guid or Int.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
-        public async Task SendAsync(IMessage message, MessagePriority priority, Func<object, int, int> shardResolver)
+        public async Task SendAsync(IMessage message, SerializationEngine? serializationEngine, MessagePriority priority, Func<object, int, int> shardResolver)
         {
             try
             {
                 using var ch = Connection.CreateModel();
+                ISerialization serializer;
 
-                // resolving dependencies
+                #region Choosing the serialization engine that will be used by this message
+                if (serializationEngine == null)
+                    serializer = DefaultSerializationEngine;
+                else
+                {
+                    serializer = Serializers.FirstOrDefault(x => x.Identification == serializationEngine);
+                    if (serializer == null)
+                    {
+                        Logger.LogWarning($"SerializationEngine {DefaultSerializationEngineChoice} not found, falling back to the default serializer.");
+                        serializer = DefaultSerializationEngine;
+                    }
+                }
+                #endregion
+
+                #region Discovering message id and shard resolver
                 var (messageIdType, messageId) = GetMessageId(message);
-                var shardFuncResolver = GetShardResolver(messageIdType, shardResolver);
+                var shardFuncResolver = GetShardResolver(messageIdType, shardResolver); 
+                #endregion
 
-                // getting type of message
+                #region Getting type of message
                 var messageType = message.GetType();
-                var fullName = messageType.AssemblyQualifiedName;
+                var fullName = messageType.AssemblyQualifiedName; 
+                #endregion
 
-                // getting basic properties
+                #region Getting basic properties
                 var basicProperties = ch.CreateBasicProperties();
-                basicProperties.Headers = new Dictionary<string, object> { { "prepareToSendAt", DateTimeUtils.UtcNow().ToBinary() } };
+                basicProperties.Headers = new Dictionary<string, object>
+                {
+                    { "prepareToSendAt", DateTimeUtils.UtcNow().ToBinary() },
+                    { "serializerType", serializer.Identification }
+                };
                 basicProperties.DeliveryMode = 2;
                 basicProperties.Type = fullName;
                 basicProperties.Persistent = true;
                 basicProperties.Priority = MessagePriorityToByte(priority);
+                #endregion
 
-                // discovering the message shard, and calculating the destiny queue
+                #region Discovering the message shard, and calculating the destiny queue
                 var shardResolverResult = shardFuncResolver(messageId, MaxShardingSize);
                 var exchange = string.Format(BusDetails.GetExchangeName(Identification, (uint)shardResolverResult));
+                #endregion
 
-                // sending the message
-                var byteContent = await Serializer.SerializeMessageAsync(message);
+                #region Sending the message
+                var byteContent = await serializer.SerializeMessageAsync(message);
                 basicProperties.Headers.Add("sentAt", DateTimeUtils.UtcNow().ToBinary());
                 ch.BasicPublish(exchange, string.Empty, basicProperties, byteContent);
                 Logger.LogDebug($"Sending message {messageType.Name} to {exchange}");
-                ch.Close();
+                ch.Close(); 
+                #endregion
 
                 MessageSent?.Invoke(this, new MessageSentEventArgs
                 {
@@ -221,7 +255,7 @@ namespace NanoMessageBus.Sender.Services
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static byte MessagePriorityToByte(MessagePriority messagePriority)
         {
-            return (byte) messagePriority;
+            return (byte)messagePriority;
         }
 
         #endregion

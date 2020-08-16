@@ -1,6 +1,7 @@
 ﻿namespace NanoMessageBus.Sender.Test
 {
     using System.Collections.Generic;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using Interfaces;
     using Microsoft.Extensions.DependencyInjection;
@@ -37,8 +38,12 @@
             Assert.Equal(senderBus1, senderBus2);
         }
 
-        [Fact]
-        public void UseSenderBus()
+        [Theory]
+        [InlineData(SerializationEngine.DeflateJson)]
+        [InlineData(SerializationEngine.NativeJson)]
+        [InlineData(SerializationEngine.MessagePack)]
+        [InlineData(SerializationEngine.Protobuf)]
+        public void UseSenderBus(SerializationEngine serializationEngine)
         {
             // arrange
             var mockConnectionFactoryManager = new Mock<IRabbitMqConnectionFactoryManager>();
@@ -55,9 +60,10 @@
             var container = services.BuildServiceProvider();
             
             // act
-            container.UseSenderBus();
+            container.UseSenderBus(serializationEngine);
 
             // assert
+            Assert.Equal(serializationEngine, container.GetService<ISenderBus>().DefaultSerializationEngineChoice);
             mockConnectionFactoryManager.Verify(x => x.GetConnectionFactory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
             mockConnectionFactory.Verify(x => x.CreateConnection(It.IsAny<IList<string>>()), Times.Once);
             mockConnection.Verify(x => x.CreateModel(), Times.Once);

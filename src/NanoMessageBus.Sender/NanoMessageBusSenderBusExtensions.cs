@@ -1,5 +1,6 @@
 ﻿namespace NanoMessageBus.Sender
 {
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using Abstractions.Services;
     using DateTimeUtils;
@@ -25,9 +26,10 @@
             return @this;
         }
 
-        public static ServiceProvider UseSenderBus(this ServiceProvider @this)
+        public static ServiceProvider UseSenderBus(this ServiceProvider @this, SerializationEngine defaultSerializationEngine = SerializationEngine.NativeJson)
         {
             var _ = @this.GetService<ISenderBus>();
+            _.DefaultSerializationEngineChoice = defaultSerializationEngine;
             return @this;
         }
 
