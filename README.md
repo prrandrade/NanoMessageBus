@@ -40,6 +40,28 @@ container.UseSenderBus(); // connections, exchanges and queues for sending messa
 container.UseReceiverBus(); // connections, exchanges and queues for receiving messages are created here!
 ```
 
+When loading the NanoMessageBus.Sender package, you also can change the default serializer engine. More of that later:
+
+```csharp
+var container = services.BuildServiceProvider();
+container.UseSenderBus(); // default serialization package is JSON
+```
+
+```csharp
+var container = services.BuildServiceProvider();
+container.UseSenderBus(SerializationEngine.DeflateJson); // default serialization package is NanoMessageBus.Serializers.DeflateJson 
+```
+
+```csharp
+var container = service.BuildServiceProvider();
+container.UseSenderBus(SerializationEngine.Protobuf); // default serialization package is NanoMessageBus.Serializers.Protobuf 
+```
+
+```csharp
+var container = service.BuildServiceProvider()
+container.UseSenderBus(SerializationEngine.MessagePack); // default serialization package is NanoMessageBus.Serializers.MessagePack 
+```
+
 Last but not least, when you are using the **NanoMessageBus.Receiver** to receive messages, you must use the extension method `ConsumeMessages` to start receiving messages.
 
 ```csharp
@@ -137,7 +159,17 @@ await senderBus.SendAsync(message, MessagePriority.Level3Priority);
 await senderBus.SendAsync(message, MessagePriority.Level4Priority);
 ```
 
-Every message is serialized using the default `Systme.Text.Json` .Net Core package and broadcasted to its respective exchange.
+Finally, you can use a non default serializer for specific messages (more of that later):
+
+```csharp
+await senderBus.SendAsync(message, SerializationEngine.NativeJson); // this message will be serialized to a JSON object, bypassing the default choice
+
+await senderBus.SendAsync(message, SerializationEngine.DeflateJson); // this message will be serialized using NanoMessageBus.Serializers.DeflateJson, bypassing the default choice
+
+await senderBus.SendAsync(message, SerializationEngine.Protobuf); // this message will be serialized using NanoMessageBus.Serializers.Protobuf, bypassing the default choice
+
+await senderBus.SendAsync(message, SerializationEngine.MessagePack); // this message will be serialized using NanoMessageBus.Serializers.MessagePack, bypassing the default choice
+```
 
 As an example, the _ExampleService_ can be started like this (note that all other properties are using the default values):
 
@@ -228,28 +260,30 @@ As you can see, more than **99%** of **500000 messages** were processed on less 
 
 # Customized Serializers
 
-These benchmark numbers can be achived using the default JSON serializer used by NanoMessageBus.Sender and NanoMessageBus.Receiver. You can, however, use customized serializers for more network performance or more serialization performance. As today, we have three cutomized serializers:
+These benchmark numbers can be achieved using the default JSON serializer used by NanoMessageBus.Sender and NanoMessageBus.Receiver, also called **NanoMessageBus.Serializers.NativeJson**. You can, however, use customized serializers for more network performance or more serialization performance. As today, we have three external cutomized serializers:
 
-- NanoMessageBus.Serializers.DeflateJson, [using DeflateStream](https://docs.microsoft.com/pt-br/dotnet/api/system.io.compression.deflatestream?view=netcore-3.1) to compress the serialized Json.
-- NanoMessageBus.Serializers.Protobuf, [using Protobuf-net](https://github.com/protobuf-net/protobuf-net) for serialization.
-- NanoMessageBus.Serializers.MessagePack, [using MessagePack](https://github.com/neuecc/MessagePack-CSharp)  for serialization.
+- **NanoMessageBus.Serializers.DeflateJson**, [using DeflateStream](https://docs.microsoft.com/pt-br/dotnet/api/system.io.compression.deflatestream?view=netcore-3.1) to compress the serialized Json.
+- **NanoMessageBus.Serializers.Protobuf**, [using Protobuf-net](https://github.com/protobuf-net/protobuf-net) for serialization.
+- **NanoMessageBus.Serializers.MessagePack**, [using MessagePack](https://github.com/neuecc/MessagePack-CSharp)  for serialization.
 
-The installation is simple, but **only one package must be used**:
+The installation is simple:
 
 ```csharp
 var services = new ServiceCollection();
-services.AddNanoMessageBusDeflateJsonSerialization(); // now the packages will serialize/deserialize all the messafges using the NanoMessageBus.Serializers.DeflateJson package
+services.AddNanoMessageBusDeflateJsonSerialization(); // now you can serialize/deserialize all the messages using the NanoMessageBus.Serializers.DeflateJson package
 ```
 
 ```csharp
 var services = new ServiceCollection();
-services.AddNanoMessageBusProtobufSerialization(); // now the packages will serialize/deserialize all the messafges using the NanoMessageBus.Serializers.Protobuf package
+services.AddNanoMessageBusProtobufSerialization(); // now you can serialize/deserialize all the messages using the NanoMessageBus.Serializers.Protobuf package
 ```
 
 ```csharp
 var services = new ServiceCollection();
-services.AddNanoMessageBusMessagePackSerialization(); // now the packages will serialize/deserialize all the messafges using the NanoMessageBus.Serializers.MessagePack package
+services.AddNanoMessageBusMessagePackSerialization(); // now you can serialize/deserialize all the messages using the NanoMessageBus.Serializers.MessagePack package
 ```
+
+Make sure that every service that is adopting the packages **NanoMessageBus.Sender** e **NanoMessageBus.Receiver** have the same customized serialization packages. The receiver part do not need any configuration, but **will not** process any message with a unknown serialization.
 
 The performance is also different, because you're adding more processing for serialization and deserialization, but a small message results in more messages being sent per second. Each scenario deserves a particular test, but in my particular scenario, the results are interesting:
 

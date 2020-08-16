@@ -57,7 +57,7 @@
 
             // creating service provider container with all dependency injections
             var container = services.BuildServiceProvider();
-            container.UseSenderBus();
+            container.UseSenderBus(SerializationEngine.MessagePack);
             container.UseReceiverBus();
 
             // start consuming messages
