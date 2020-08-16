@@ -178,7 +178,7 @@ namespace NanoMessageBus.Sender.Services
                 basicProperties.Headers = new Dictionary<string, object>
                 {
                     { "prepareToSendAt", DateTimeUtils.UtcNow().ToBinary() },
-                    { "serializer", serializer.Identification }
+                    { "serializer", (int)serializer.Identification }
                 };
                 basicProperties.DeliveryMode = 2;
                 basicProperties.Type = fullName;

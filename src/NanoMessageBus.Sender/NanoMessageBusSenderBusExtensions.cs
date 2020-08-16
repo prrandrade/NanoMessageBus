@@ -19,7 +19,7 @@
             @this.AddPropertyRetriever();
             @this.AddDateTimeUtils();
             @this.AddNanoMessageBusNativeJsonSerializer();
-            @this.AddLogging(c => c.AddConsole(x => x.IncludeScopes = false));
+            @this.AddLogging(c => c.AddConsole());
             @this.TryAddScoped(typeof(ILoggerFacade<>), typeof(LoggerFacade<>));
             @this.TryAddSingleton<IRabbitMqConnectionFactoryManager, RabbitMqConnectionFactoryManager>();
             @this.TryAddSingleton<ISenderBus, SenderBus>();

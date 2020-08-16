@@ -4,6 +4,7 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using DateTimeUtils;
     using Interfaces;
     using Messages;
@@ -23,13 +24,12 @@
         private static async Task Main()
         {
             int totalMessages, warmupMessages, parallel;
-            const string serialization = "";
             var services = new ServiceCollection();
 
             // dependency injection
             services.AddPropertyRetriever();
             services.AddDateTimeUtils();
-            services.AddLogging(c => c.ClearProviders());
+            services.AddLogging(c => c.AddConsole());
             await using (var tempContainer = services.BuildServiceProvider())
             {
                 parallel = tempContainer
@@ -46,8 +46,6 @@
             services.AddNanoMessageBusProtobufSerialization();
             services.AddNanoMessageBusDeflateJsonSerialization();
             services.AddNanoMessageBusMessagePackSerialization();
-
-
             services.AddSenderBus();
             services.AddReceiverBus();
 
@@ -68,74 +66,81 @@
             // start message sender
             var senderBus = container.GetSenderBus();
 
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Sending some messages to load everything...");
-            Parallel.For(0, warmupMessages, new ParallelOptions { MaxDegreeOfParallelism = parallel }, async i =>
+            foreach (var serializationEngine in Enum.GetValues(typeof(SerializationEngine)).Cast<SerializationEngine>())
             {
-                await senderBus.SendAsync(new Message
-                {
-                    Id = Guid.NewGuid(),
-                    MessageContent01 = Guid.NewGuid().ToString(),
-                    MessageContent02 = Guid.NewGuid().ToString(),
-                    MessageContent03 = Guid.NewGuid().ToString(),
-                    MessageContent04 = Guid.NewGuid().ToString(),
-                    MessageContent05 = Guid.NewGuid().ToString(),
-                    MessageContent06 = Guid.NewGuid().ToString(),
-                    MessageContent07 = Guid.NewGuid().ToString(),
-                    MessageContent08 = Guid.NewGuid().ToString(),
-                    MessageContent09 = Guid.NewGuid().ToString(),
-                    MessageContent10 = Guid.NewGuid().ToString(),
-                    MessageContent11 = Guid.NewGuid().ToString(),
-                    MessageContent12 = Guid.NewGuid().ToString(),
-                    MessageContent13 = Guid.NewGuid().ToString(),
-                    MessageContent14 = Guid.NewGuid().ToString(),
-                    MessageContent15 = Guid.NewGuid().ToString(),
-                    MessageContent16 = Guid.NewGuid().ToString(),
-                    MessageContent17 = Guid.NewGuid().ToString(),
-                    MessageContent18 = Guid.NewGuid().ToString(),
-                    MessageContent19 = Guid.NewGuid().ToString(),
-                    MessageContent20 = Guid.NewGuid().ToString(),
-                    PersistMessage = false
-                });
-                Thread.Sleep(1);
-            });
+                countdown.Reset();
 
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Sending messages...");
-            Parallel.For(0, totalMessages, new ParallelOptions { MaxDegreeOfParallelism = parallel }, async i =>
-            {
-                await senderBus.SendAsync(new Message
+                Console.WriteLine("");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Now using {serializationEngine.ToString()}");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Sending some messages to load everything...");
+                Parallel.For(0, warmupMessages, new ParallelOptions { MaxDegreeOfParallelism = parallel }, async i =>
                 {
-                    Id = Guid.NewGuid(),
-                    MessageContent01 = Guid.NewGuid().ToString(),
-                    MessageContent02 = Guid.NewGuid().ToString(),
-                    MessageContent03 = Guid.NewGuid().ToString(),
-                    MessageContent04 = Guid.NewGuid().ToString(),
-                    MessageContent05 = Guid.NewGuid().ToString(),
-                    MessageContent06 = Guid.NewGuid().ToString(),
-                    MessageContent07 = Guid.NewGuid().ToString(),
-                    MessageContent08 = Guid.NewGuid().ToString(),
-                    MessageContent09 = Guid.NewGuid().ToString(),
-                    MessageContent10 = Guid.NewGuid().ToString(),
-                    MessageContent11 = Guid.NewGuid().ToString(),
-                    MessageContent12 = Guid.NewGuid().ToString(),
-                    MessageContent13 = Guid.NewGuid().ToString(),
-                    MessageContent14 = Guid.NewGuid().ToString(),
-                    MessageContent15 = Guid.NewGuid().ToString(),
-                    MessageContent16 = Guid.NewGuid().ToString(),
-                    MessageContent17 = Guid.NewGuid().ToString(),
-                    MessageContent18 = Guid.NewGuid().ToString(),
-                    MessageContent19 = Guid.NewGuid().ToString(),
-                    MessageContent20 = Guid.NewGuid().ToString(),
-                    PersistMessage = true
+                    await senderBus.SendAsync(new Message
+                    {
+                        Id = Guid.NewGuid(),
+                        MessageContent01 = Guid.NewGuid().ToString(),
+                        MessageContent02 = Guid.NewGuid().ToString(),
+                        MessageContent03 = Guid.NewGuid().ToString(),
+                        MessageContent04 = Guid.NewGuid().ToString(),
+                        MessageContent05 = Guid.NewGuid().ToString(),
+                        MessageContent06 = Guid.NewGuid().ToString(),
+                        MessageContent07 = Guid.NewGuid().ToString(),
+                        MessageContent08 = Guid.NewGuid().ToString(),
+                        MessageContent09 = Guid.NewGuid().ToString(),
+                        MessageContent10 = Guid.NewGuid().ToString(),
+                        MessageContent11 = Guid.NewGuid().ToString(),
+                        MessageContent12 = Guid.NewGuid().ToString(),
+                        MessageContent13 = Guid.NewGuid().ToString(),
+                        MessageContent14 = Guid.NewGuid().ToString(),
+                        MessageContent15 = Guid.NewGuid().ToString(),
+                        MessageContent16 = Guid.NewGuid().ToString(),
+                        MessageContent17 = Guid.NewGuid().ToString(),
+                        MessageContent18 = Guid.NewGuid().ToString(),
+                        MessageContent19 = Guid.NewGuid().ToString(),
+                        MessageContent20 = Guid.NewGuid().ToString(),
+                        PersistMessage = false
+                    }, serializationEngine);
+                    Thread.Sleep(1);
                 });
-                Thread.Sleep(1);
-            });
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Every message was sent!");
-            countdown.Wait();
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Sending messages...");
+                Parallel.For(0, totalMessages, new ParallelOptions { MaxDegreeOfParallelism = parallel }, async i =>
+                {
+                    await senderBus.SendAsync(new Message
+                    {
+                        Id = Guid.NewGuid(),
+                        MessageContent01 = Guid.NewGuid().ToString(),
+                        MessageContent02 = Guid.NewGuid().ToString(),
+                        MessageContent03 = Guid.NewGuid().ToString(),
+                        MessageContent04 = Guid.NewGuid().ToString(),
+                        MessageContent05 = Guid.NewGuid().ToString(),
+                        MessageContent06 = Guid.NewGuid().ToString(),
+                        MessageContent07 = Guid.NewGuid().ToString(),
+                        MessageContent08 = Guid.NewGuid().ToString(),
+                        MessageContent09 = Guid.NewGuid().ToString(),
+                        MessageContent10 = Guid.NewGuid().ToString(),
+                        MessageContent11 = Guid.NewGuid().ToString(),
+                        MessageContent12 = Guid.NewGuid().ToString(),
+                        MessageContent13 = Guid.NewGuid().ToString(),
+                        MessageContent14 = Guid.NewGuid().ToString(),
+                        MessageContent15 = Guid.NewGuid().ToString(),
+                        MessageContent16 = Guid.NewGuid().ToString(),
+                        MessageContent17 = Guid.NewGuid().ToString(),
+                        MessageContent18 = Guid.NewGuid().ToString(),
+                        MessageContent19 = Guid.NewGuid().ToString(),
+                        MessageContent20 = Guid.NewGuid().ToString(),
+                        PersistMessage = true
+                    }, serializationEngine);
+                    Thread.Sleep(1);
+                });
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Every message was sent!");
+                countdown.Wait();
 
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Exporting results...");
-            var exporedResultsFileName = await container.GetService<IBenchmarkRepository>().ExportFilteredDataAsync(totalMessages, serialization);
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Done!");
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Results can be found on file {exporedResultsFileName}");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Exporting results...");
+                var exporedResultsFileName = await container.GetService<IBenchmarkRepository>().ExportFilteredDataAsync(totalMessages, serializationEngine.ToString());
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Done!");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Results can be found on file {exporedResultsFileName}");
+                container.GetService<IBenchmarkRepository>().ClearDatabase();
+            }
         }
     }
 }

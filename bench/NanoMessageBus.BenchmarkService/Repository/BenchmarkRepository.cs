@@ -89,6 +89,11 @@
             return $"benchmark_{compressEngine}.txt";
         }
 
+        public void ClearDatabase()
+        {
+            _infosCollection.DeleteAll();
+        }
+
         private static T GetNthPercentile<T>(IReadOnlyList<T> values, double percentile)
         {
             // calculating percentile position
