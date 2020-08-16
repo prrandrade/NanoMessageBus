@@ -26,7 +26,6 @@ namespace NanoMessageBus.Sender.Test
         private Mock<ISerialization> SerializerMock2 { get; }
         private IEnumerable<ISerialization> Serializers { get; }
 
-
         private Mock<IConnectionFactory> ConnectionFactoryMock { get; }
         private Mock<IConnection> ConnectionMock { get; }
         private Mock<IModel> ChannelMock { get; }
@@ -40,6 +39,10 @@ namespace NanoMessageBus.Sender.Test
             PropertyRetrieverMock = new Mock<IPropertyRetriever>();
             SerializerMock1 = new Mock<ISerialization>();
             SerializerMock2 = new Mock<ISerialization>();
+
+            SerializerMock1.SetupGet(x => x.Identification).Returns(SerializationEngine.NativeJson);
+            SerializerMock2.SetupGet(x => x.Identification).Returns(SerializationEngine.DeflateJson);
+
             Serializers = new List<ISerialization> { SerializerMock1.Object, SerializerMock2.Object };
 
             ConnectionFactoryMock = new Mock<IConnectionFactory>();
@@ -227,9 +230,7 @@ namespace NanoMessageBus.Sender.Test
             var senderBus = new SenderBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers);
             var message = new DummyIntMessage { Id = 0 };
             var expectedExchangeName = $"exchange.{identification}.0";
-
             var byteArray = Array.Empty<byte>();
-            
 
             // act
             await senderBus.SendAsync(message);
