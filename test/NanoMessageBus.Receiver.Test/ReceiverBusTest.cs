@@ -6,6 +6,7 @@
     using System.Linq;
     using System.Reflection;
     using System.Text.Json;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using DateTimeUtils.Interfaces;
     using Handlers;
@@ -32,7 +33,10 @@
 
         private Mock<IDateTimeUtils> DateTimeUtilsMock { get; }
         private Mock<IPropertyRetriever> PropertyRetrieverMock { get; }
-        private Mock<ISerialization> SerializerMock { get; }
+        private Mock<ISerialization> NativeJsonSerializerMock { get; }
+        private Mock<ISerialization> DeflateJsonSerializerMock { get; }
+
+        private IEnumerable<ISerialization> Serializers { get; }
 
         private Mock<IConnectionFactory> ConnectionFactoryMock { get; }
         private Mock<IConnection> ConnectionMock { get; }
@@ -49,7 +53,12 @@
             ServiceScopeFactoryMock = new Mock<IServiceScopeFactory>();
             ServiceScopeMock = new Mock<IServiceScope>();
             ServiceProviderMock = new Mock<IServiceProvider>();
-            SerializerMock = new Mock<ISerialization>();
+
+            NativeJsonSerializerMock = new Mock<ISerialization>();
+            DeflateJsonSerializerMock = new Mock<ISerialization>();
+            NativeJsonSerializerMock.SetupGet(x => x.Identification).Returns(SerializationEngine.NativeJson);
+            DeflateJsonSerializerMock.SetupGet(x => x.Identification).Returns(SerializationEngine.DeflateJson);
+            Serializers = new List<ISerialization> { NativeJsonSerializerMock.Object, DeflateJsonSerializerMock.Object };
 
             DateTimeUtilsMock = new Mock<IDateTimeUtils>();
             PropertyRetrieverMock = new Mock<IPropertyRetriever>();
@@ -69,7 +78,7 @@
             PrepareForReceiverBus(identification, maxShardingSize, listenedShards, prefetch, autoAck);
 
             // act
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers);
 
             // assert
             if (maxShardingSize <= 0)
@@ -110,7 +119,7 @@
                 .Throws(ex);
 
             // act
-            var result = Record.Exception(() => new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object, Handlers));
+            var result = Record.Exception(() => new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers));
 
             // assert
             Assert.IsType<InvalidOperationException>(result);
@@ -128,7 +137,7 @@
         {
             // arrange
             PrepareForReceiverBus(identification, maxShardingSize, listenedShards, prefetch, autoAck);
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers);
 
             // act
             receiverBus.StartConsumer();
@@ -161,14 +170,15 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers);
 
             var message = new DummyIntMessage();
             var stream = new MemoryStream();
             await JsonSerializer.SerializeAsync(stream, message, message.GetType());
             var byteContent = stream.ToArray();
-            SerializerMock
-                .Setup(x => x.DeserializeMessageAsync(It.IsAny<byte[]>(), It.IsAny<Type>()))
+
+            NativeJsonSerializerMock
+                .Setup(x => x.DeserializeMessageAsync(byteContent, message.GetType()))
                 .ReturnsAsync(message);
 
             var ea = new BasicDeliverEventArgs
@@ -181,7 +191,8 @@
                     Headers = new Dictionary<string, object>
                     {
                         {"prepareToSendAt", prepareToSendAt.ToBinary()},
-                        {"sentAt", sentAt.ToBinary()}
+                        {"sentAt", sentAt.ToBinary()},
+                        {"serializer", SerializationEngine.NativeJson}
                     }
                 }
             };
@@ -190,7 +201,7 @@
             await receiverBus.ConsumeMessageAsync(ChannelMock.Object, ea);
 
             // assert
-            var handler = (DummyIntHandler) Handlers.First(x => x.GetType() == typeof(DummyIntHandler));
+            var handler = (DummyIntHandler)Handlers.First(x => x.GetType() == typeof(DummyIntHandler));
             Assert.True(handler.RegisterStatisticsAsyncPassed);
             Assert.True(handler.BeforeHandlerAsyncPassed);
             Assert.True(handler.HandleAsyncPassed);
@@ -217,14 +228,15 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers);
 
             var message = new DummyGuidMessage();
             var stream = new MemoryStream();
             await JsonSerializer.SerializeAsync(stream, message, message.GetType());
             var byteContent = stream.ToArray();
-            SerializerMock
-                .Setup(x => x.DeserializeMessageAsync(It.IsAny<byte[]>(), It.IsAny<Type>()))
+
+            NativeJsonSerializerMock
+                .Setup(x => x.DeserializeMessageAsync(byteContent, message.GetType()))
                 .ReturnsAsync(message);
 
             var ea = new BasicDeliverEventArgs
@@ -237,7 +249,8 @@
                     Headers = new Dictionary<string, object>
                     {
                         {"prepareToSendAt", prepareToSendAt.ToBinary()},
-                        {"sentAt", sentAt.ToBinary()}
+                        {"sentAt", sentAt.ToBinary()},
+                        {"serializer", SerializationEngine.NativeJson}
                     }
                 }
             };
@@ -246,7 +259,7 @@
             await receiverBus.ConsumeMessageAsync(ChannelMock.Object, ea);
 
             // assert
-            var handler = (DummyGuidHandler) Handlers.First(x => x.GetType() == typeof(DummyGuidHandler));
+            var handler = (DummyGuidHandler)Handlers.First(x => x.GetType() == typeof(DummyGuidHandler));
             Assert.True(handler.RegisterStatisticsAsyncPassed);
             Assert.True(handler.BeforeHandlerAsyncPassed);
             Assert.True(handler.HandleAsyncPassed);
@@ -273,7 +286,7 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers);
 
             var message = new DummyGuidMessage();
             var stream = new MemoryStream();
@@ -321,7 +334,7 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers);
 
             var message = new DummyGuidMessage();
             var stream = new MemoryStream();
@@ -352,6 +365,103 @@
                 ChannelMock.Verify(x => x.BasicAck(ea.DeliveryTag, false), Times.Once);
         }
 
+        [Theory]
+        [InlineData("exampleService", 0, "0", 10, true)]
+        public async void ConsumeMessageAsync_NoSerializer(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
+        {
+            // arrange
+            PrepareForReceiverBus(identification, maxShardingSize, listenedShards, prefetch, autoAck);
+
+            var prepareToSendAt = new DateTime(2002, 1, 1);
+            var sentAt = new DateTime(2003, 1, 1);
+            var receivedAt = new DateTime(2004, 1, 1);
+            var handledAt = new DateTime(2005, 1, 1);
+
+            DateTimeUtilsMock
+                .SetupSequence(x => x.UtcNow())
+                .Returns(receivedAt)
+                .Returns(handledAt);
+
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers);
+
+            var message = new DummyGuidMessage();
+            var stream = new MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, message, message.GetType());
+            var byteContent = stream.ToArray();
+            var ea = new BasicDeliverEventArgs
+            {
+                Body = byteContent,
+                DeliveryTag = ulong.MaxValue,
+                BasicProperties = new DummyBasicProperties
+                {
+                    Type = message.GetType().AssemblyQualifiedName,
+                    Headers = new Dictionary<string, object>
+                    {
+                        {"prepareToSendAt", prepareToSendAt.ToBinary()},
+                        {"sentAt", sentAt.ToBinary()}
+                    }
+                }
+            };
+
+            // act
+            await receiverBus.ConsumeMessageAsync(ChannelMock.Object, ea);
+
+            // assert
+            LoggerFacadeMock.Verify(x => x.LogWarning($"Message received with no defined serialization engine. This message will be ignored!"));
+
+            if (!autoAck)
+                ChannelMock.Verify(x => x.BasicAck(ea.DeliveryTag, false), Times.Once);
+        }
+
+        [Theory]
+        [InlineData("exampleService", 0, "0", 10, true)]
+        public async void ConsumeMessageAsync_UnrecognizableSerializer(string identification, int maxShardingSize, string listenedShards, ushort prefetch, bool autoAck)
+        {
+            // arrange
+            PrepareForReceiverBus(identification, maxShardingSize, listenedShards, prefetch, autoAck);
+
+            var prepareToSendAt = new DateTime(2002, 1, 1);
+            var sentAt = new DateTime(2003, 1, 1);
+            var receivedAt = new DateTime(2004, 1, 1);
+            var handledAt = new DateTime(2005, 1, 1);
+
+            DateTimeUtilsMock
+                .SetupSequence(x => x.UtcNow())
+                .Returns(receivedAt)
+                .Returns(handledAt);
+
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers);
+
+            var message = new DummyGuidMessage();
+            var stream = new MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, message, message.GetType());
+            var byteContent = stream.ToArray();
+            var ea = new BasicDeliverEventArgs
+            {
+                Body = byteContent,
+                DeliveryTag = ulong.MaxValue,
+                BasicProperties = new DummyBasicProperties
+                {
+                    Type = message.GetType().AssemblyQualifiedName,
+                    Headers = new Dictionary<string, object>
+                    {
+                        {"prepareToSendAt", prepareToSendAt.ToBinary()},
+                        {"sentAt", sentAt.ToBinary()},
+                        {"serializer", SerializationEngine.Protobuf}
+                    }
+                }
+            };
+
+            // act
+            await receiverBus.ConsumeMessageAsync(ChannelMock.Object, ea);
+
+            // assert
+            LoggerFacadeMock.Verify(x => x.LogWarning($"Message received with unrecognized serialization engine {ea.BasicProperties.Headers["serializer"]}. This message will be ignored!"));
+
+            if (!autoAck)
+                ChannelMock.Verify(x => x.BasicAck(ea.DeliveryTag, false), Times.Once);
+        }
+
         #endregion
 
         #region Consuming Messages via event 
@@ -373,14 +483,15 @@
                 .Returns(receivedAt)
                 .Returns(handledAt);
 
-            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, SerializerMock.Object, Handlers);
+            var receiverBus = new ReceiverBus(LoggerFacadeMock.Object, ConnectionFactoryManagerMock.Object, BasicConsumerManagerMock.Object, ServiceScopeFactoryMock.Object, PropertyRetrieverMock.Object, DateTimeUtilsMock.Object, Serializers, Handlers);
 
             var message = new DummyIntMessage { Id = 0 };
             var stream = new MemoryStream();
             await JsonSerializer.SerializeAsync(stream, message, message.GetType());
             var byteContent = stream.ToArray();
-            SerializerMock
-                .Setup(x => x.DeserializeMessageAsync(It.IsAny<byte[]>(), It.IsAny<Type>()))
+
+            NativeJsonSerializerMock
+                .Setup(x => x.DeserializeMessageAsync(byteContent, message.GetType()))
                 .ReturnsAsync(message);
 
             var ea = new BasicDeliverEventArgs
@@ -393,7 +504,8 @@
                     Headers = new Dictionary<string, object>
                     {
                         {"prepareToSendAt", prepareToSendAt.ToBinary()},
-                        {"sentAt", sentAt.ToBinary()}
+                        {"sentAt", sentAt.ToBinary()},
+                        {"serializer", SerializationEngine.NativeJson}
                     }
                 }
             };
@@ -403,7 +515,7 @@
             receiverBus.Consumers[queue].HandleBasicDeliver(Guid.NewGuid().ToString(), ea.DeliveryTag, false, string.Empty, string.Empty, ea.BasicProperties, byteContent);
 
             // assert
-            var handler = (DummyIntHandler) Handlers.First(x => x.GetType() == typeof(DummyIntHandler));
+            var handler = (DummyIntHandler)Handlers.First(x => x.GetType() == typeof(DummyIntHandler));
             Assert.True(handler.RegisterStatisticsAsyncPassed);
             Assert.True(handler.BeforeHandlerAsyncPassed);
             Assert.True(handler.HandleAsyncPassed);

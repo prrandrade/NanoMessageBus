@@ -5,7 +5,9 @@ namespace NanoMessageBus.Receiver.Services
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
+    using Abstractions.Enums;
     using Abstractions.Interfaces;
     using DateTimeUtils.Interfaces;
     using Extensions;
@@ -21,7 +23,7 @@ namespace NanoMessageBus.Receiver.Services
         // injected dependencies
         public ILoggerFacade<ReceiverBus> Logger { get; }
         public IDateTimeUtils DateTimeUtils { get; }
-        public ISerialization Serializer { get; }
+        public IEnumerable<ISerialization> Serializers { get; }
         public IServiceScopeFactory ServiceScopeFactory { get; }
 
         // properties to control consumers and queues for this consumer
@@ -36,8 +38,8 @@ namespace NanoMessageBus.Receiver.Services
         private IConnectionFactory ConnectionFactory { get; }
 
         public ReceiverBus(ILoggerFacade<ReceiverBus> logger, IRabbitMqConnectionFactoryManager connectionFactoryManager,
-            IRabbitMqEventingBasicConsumerManager basicConsumerManager, IServiceScopeFactory serviceScopeFactory, 
-            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, ISerialization serializer,
+            IRabbitMqEventingBasicConsumerManager basicConsumerManager, IServiceScopeFactory serviceScopeFactory,
+            IPropertyRetriever propertyRetriever, IDateTimeUtils dateTimeUtils, IEnumerable<ISerialization> serializers,
             IEnumerable<IMessageHandler> handlers)
         {
             try
@@ -45,7 +47,7 @@ namespace NanoMessageBus.Receiver.Services
                 Logger = logger;
                 DateTimeUtils = dateTimeUtils;
                 ServiceScopeFactory = serviceScopeFactory;
-                Serializer = serializer;
+                Serializers = serializers;
 
                 #region Getting Properties from command line or environment
 
@@ -165,20 +167,43 @@ namespace NanoMessageBus.Receiver.Services
 
         private async Task<(IMessage, Type)> ProcessDeliveredMessageAsync(BasicDeliverEventArgs ea)
         {
+            #region Getting message type
             var receivedMessageType = Type.GetType(ea.BasicProperties.Type);
             if (receivedMessageType == null)
             {
                 Logger.LogWarning($"Unrecognizable type {ea.BasicProperties.Type} for delivered message!");
                 return (null, null);
             }
+            #endregion
 
+            #region Verifying handler for thins message type
             if (!MessageTypes.ContainsKey(receivedMessageType))
             {
                 Logger.LogWarning($"There's no handler for {ea.BasicProperties.Type}. This message will be ignored!");
                 return (null, null);
-            }
+            } 
+            #endregion
 
-            var receivedMessage = await Serializer.DeserializeMessageAsync(ea.Body.ToArray(), receivedMessageType);
+            #region Defining the serialization engine
+            SerializationEngine serializerChoice;
+            try
+            {
+                serializerChoice = (SerializationEngine)ea.BasicProperties.Headers["serializer"];
+            }
+            catch
+            {
+                Logger.LogWarning("Message received with no defined serialization engine. This message will be ignored!");
+                return (null, null);
+            }
+            var serializer = Serializers.FirstOrDefault(x => x.Identification == serializerChoice);
+            if (serializer == null)
+            {
+                Logger.LogWarning($"Message received with unrecognized serialization engine {ea.BasicProperties.Headers["serializer"]}. This message will be ignored!");
+                return (null, null);
+            }
+            #endregion
+
+            var receivedMessage = await serializer.DeserializeMessageAsync(ea.Body.ToArray(), receivedMessageType);
             var receivedConvertedMessage = (IMessage)receivedMessage;
 
             return (receivedConvertedMessage, receivedMessageType);
@@ -193,7 +218,7 @@ namespace NanoMessageBus.Receiver.Services
             var handle = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.HandleAsync));
             var afterHandle = handlerType.GetMethod(nameof(IMessageHandler<IMessage>.AfterHandleAsync));
 
-            var statisticsArguments = new object[] {receivedConvertedMessage, messageSize, DateTime.FromBinary(prepareToSendAt), DateTime.FromBinary(sentAt), DateTime.FromBinary(receivedAt), DateTimeUtils.UtcNow() };
+            var statisticsArguments = new object[] { receivedConvertedMessage, messageSize, DateTime.FromBinary(prepareToSendAt), DateTime.FromBinary(sentAt), DateTime.FromBinary(receivedAt), DateTimeUtils.UtcNow() };
             var arguments = new object[] { receivedConvertedMessage };
 
             // ReSharper disable PossibleNullReferenceException
