@@ -4,7 +4,7 @@
 
 - [Introduction](#introduction)
 - [Nuget Packages](#nuget-packages)
-- [Packages Installation with .NET Core Dependency Injection Framework](#package-installation-with-.net-core-dependency-injection-framework)
+- [Packages Installation with .NET Dependency Injection Framework](#package-installation-with-.net-dependency-injection-framework)
 - [NanoMessageBus.Sender - How to send messages with RabbitMQ](#nanomessagebus.sender-how-to-send-messages-with-rabbitmq)
 - [NanoMessageBus.Receiver - Receiving messages with RabbitMQ](#nanomessagebus.receiver-receiving-messages-with-rabbitmq)
 - [Benchmark scenario](#benchmark-scenario)
@@ -22,9 +22,9 @@ The NanoMessageBus is built with two packages - **NanoMessaegBus.Sender** and **
 - [NanoMessageBus.Serializers.Protobuf](https://www.nuget.org/packages/NanoMessageBus.Serializers.Protobuf/)
 - [NanoMessageBus.Serializers.MessagePack](https://www.nuget.org/packages/NanoMessageBus.Serializers.MessagePack/)
 
-# Packages installation with .NET Core Dependency Injection Framework
+# Packages installation with .NET Dependency Injection Framework
 
-Using the native .NET Core dependency injection framework, you can install the **NanoMessageBus.Sender** package and the **NanoMessageBus.Receiver** package separately. Using a default `ServiceColletion` object, you can use the extension methods `AddSenderBus` and `AddReceiverBus` which register all the related dependencies.
+Using the native .NET dependency injection framework, you can install the **NanoMessageBus.Sender** package and the **NanoMessageBus.Receiver** package separately. Using a default `ServiceColletion` object, you can use the extension methods `AddSenderBus` and `AddReceiverBus` which register all the related dependencies.
 
 ```csharp
 var services = new ServiceCollection();
@@ -325,6 +325,3 @@ On average **493 messages** were sent **per second**, each message with **1140 b
 | 99.9              | 661.626         |
 | 99.99             | 1030.943        |
 | 100 (worse case!) | 5951.829        |
-
-
-
